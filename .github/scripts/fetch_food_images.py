@@ -15,62 +15,51 @@ IMAGES_FOLDER = "images"
 os.makedirs(IMAGES_FOLDER, exist_ok=True)
 
 def get_food_list_from_html():
-    """يقرأ أسماء الأطعمة من ملف HTML"""
     with open(FOODS_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
-    
     soup = BeautifulSoup(content, 'html.parser')
     foods = []
-    
-    # البحث عن بطاقات الطعام
     for card in soup.find_all('div', class_='food-card'):
         name_tag = card.find('h3')
         if name_tag:
-            food_name = name_tag.get_text(strip=True)
-            foods.append(food_name)
-    
+            foods.append(name_tag.get_text(strip=True))
     return foods
 
 def fetch_image_url(food_name):
-    """يجيب رابط صورة من Tavily"""
     try:
         response = tavily.search(f"{food_name} طعام خلفية بيضاء", include_images=True, max_results=1)
         images = response.get('images', [])
         if images:
             return images[0]
     except Exception as e:
-        print(f"⚠️ خطأ في البحث عن {food_name}: {e}")
+        print(f"⚠️ {food_name}: {e}")
     return None
 
-def download_image(image_url, food_name):
-    """تحميل الصورة وتحويلها لـ WebP"""
+def download_and_optimize(image_url, food_name):
     try:
         response = requests.get(image_url, timeout=15)
         if response.status_code == 200:
             from PIL import Image
             from io import BytesIO
-            
             img = Image.open(BytesIO(response.content))
             if img.mode in ('RGBA', 'P'):
                 img = img.convert('RGB')
             img.thumbnail((300, 300))
-            
             filename = f"{food_name}.webp"
             filepath = os.path.join(IMAGES_FOLDER, filename)
             img.save(filepath, 'webp', quality=75)
-            print(f"✅ تحميل: {filename}")
+            print(f"✅ {food_name}.webp")
             return filename
     except Exception as e:
-        print(f"❌ فشل تحميل {food_name}: {e}")
+        print(f"❌ {food_name}: {e}")
     return None
 
 def update_html_with_image(food_name, image_filename):
-    """يعدل ملف HTML ويضيف الصورة"""
     with open(FOODS_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    # البحث عن بطاقة الطعام المطلوبة
-    pattern = rf'(<div class="food-card">.*?<h3>{food_name}</h3>.*?<div class="food-card-image">).*?(</div>)'
+    # البحث عن div food-card-image الفارغ
+    pattern = rf'(<div class="food-card">.*?<h3>{food_name}</h3>.*?<div class="food-card-image">)\s*(</div>)'
     
     def replace_image(match):
         return f'{match.group(1)}<img src="{IMAGES_FOLDER}/{image_filename}" alt="{food_name}">{match.group(2)}'
@@ -80,23 +69,22 @@ def update_html_with_image(food_name, image_filename):
     with open(FOODS_FILE, 'w', encoding='utf-8') as f:
         f.write(new_content)
     
-    print(f"📝 تم تحديث: {food_name}")
+    print(f"📝 {food_name}")
 
 def main():
-    print("🚀 بدء تحديث الصور...")
+    print("🚀 بدء تحديث الصور تلقائياً...")
     foods = get_food_list_from_html()
-    print(f"📋 وجدت {len(foods)} صنف طعام")
+    print(f"📋 عدد الأطعمة: {len(foods)}")
     
     for food in foods:
-        print(f"🔍 ببحث عن: {food}")
+        print(f"🔍 {food}")
         image_url = fetch_image_url(food)
-        
         if image_url:
-            image_file = download_image(image_url, food)
+            image_file = download_and_optimize(image_url, food)
             if image_file:
                 update_html_with_image(food, image_file)
-        else:
-            print(f"⚠️ مفيش صورة لـ {food}")
+    
+    print("🎉 انتهى التحديث التلقائي!")
 
 if __name__ == "__main__":
     main()
