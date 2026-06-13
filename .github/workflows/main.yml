@@ -1,4 +1,4 @@
-name: تحديث صور الأطعمة
+name: تحديث صور الأطعمة تلقائياً
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  update-food-images:
+  auto-update:
     runs-on: ubuntu-latest
     
     steps:
@@ -27,16 +27,16 @@ jobs:
         run: |
           pip install requests pillow tavily-python beautifulsoup4
 
-      - name: تشغيل سكريبت التحديث
+      - name: تشغيل السكريبت التلقائي
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           python .github/scripts/update_food_images.py
 
-      - name: رفع التغييرات
+      - name: رفع التغييرات تلقائياً
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add images/*.webp foods-database.html || true
-          git diff --staged --quiet || git commit -m "🤖 تحديث صور الأطعمة [skip ci]"
+          git diff --staged --quiet || git commit -m "🤖 تحديث تلقائي للصور [skip ci]"
           git push
