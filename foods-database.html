@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قاعدة الأطعمة | نظام الطيبات</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+</head>
+<body>
+
+<div class="foods-container">
+    <div class="foods-header">
+        <h1>🥗 قاعدة الأطعمة - نظام الطيبات</h1>
+        <p style="text-align: center;">جميع الأطعمة التي ذكرها الدكتور ضياء العوضي (رحمه الله) - مسموحة وممنوعة</p>
+        
+        <div class="foods-search">
+            <input type="text" id="searchInput" placeholder="🔍 ابحث عن طعام...">
+            <select id="filterSelect">
+                <option value="all">الكل</option>
+                <option value="allowed">✅ الأطعمة الطيبة (المسموحة)</option>
+                <option value="forbidden">❌ الأطعمة الخبيثة (الممنوعة)</option>
+                <option value="limited">⚠️ التي تؤكل بكميات محدودة</option>
+            </select>
+        </div>
+    </div>
+    
+    <div id="foodsGrid" class="foods-grid"></div>
+</div>
+
+<footer>
+    <div class="footer-container">
+        <div class="footer-grid">
+            <div class="footer-col"><h4>روابط سريعة</h4><ul><li><a href="legal.html">⚖️ الإفصاح القانوني</a></li><li><a href="privacy.html">🔒 سياسة الخصوصية</a></li><li><a href="terms.html">📜 شروط الاستخدام</a></li><li><a href="about-site.html">🌟 عن الموقع</a></li></ul></div>
+            <div class="footer-col"><h4>عن الموقع</h4><p>منصة توعوية لنشر منهج "نظام الطيبات" للدكتور ضياء العوضي.</p></div>
+            <div class="footer-col"><h4>مؤسس الموقع</h4><p>كريم عاطف<br>مواليد 5 سبتمبر 2007</p></div>
+            <div class="footer-col"><h4>تابعنا</h4><div class="social-icons"><a href="https://www.youtube.com/@MrBits-8" target="_blank" class="social-icon youtube"><i class="fab fa-youtube"></i> يوتيوب</a><a href="https://www.facebook.com/share/1BGqkqvAhZ/" target="_blank" class="social-icon facebook"><i class="fab fa-facebook-f"></i> فيسبوك</a><a href="https://whatsapp.com/channel/0029Vb7vA9EHgZWYc8Y56a1w" target="_blank" class="social-icon whatsapp"><i class="fab fa-whatsapp"></i> واتساب</a><a href="https://www.tiktok.com/@mr.bits.8" target="_blank" class="social-icon tiktok"><i class="fab fa-tiktok"></i> تيك توك</a></div></div>
+            <div class="footer-col"><h4>إحصائيات</h4><div class="stats-box"><p>👥 المستخدمين: <strong id="userCount">0</strong></p></div></div>
+        </div>
+        <div class="footer-bottom"><p>© 2025 - جميع الحقوق محفوظة لـ كريم عاطف | نظام الطيبات للأغراض التوعوية والبحثية</p></div>
+    </div>
+</footer>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+    // ========== قاعدة بيانات الأطعمة حسب نظام الدكتور ضياء العوضي ==========
+    const foodsDatabase = [
+        // ==================== النشويات المسموحة (الطيبات) ====================
+        { name: "الأرز", type: "allowed", category: "نشويات", desc: "الأرز الأبيض أو البني - من الطيبات", benefits: "سهل الهضم، مصدر طاقة سريع", warning: "لا تفرط في الكمية", quantity: "حسب الجوع", img: "rice.jpg" },
+        { name: "البطاطس", type: "allowed", category: "نشويات", desc: "البطاطس المسلوقة أو المشوية", benefits: "غنية بالبوتاسيوم، تشعر بالشبع", warning: "ممنوع القلي", quantity: "حبة متوسطة يومياً", img: "potato.jpg" },
+        { name: "خبز القمح الكامل", type: "allowed", category: "نشويات", desc: "خبز أسمر 100%", benefits: "غني بالألياف، يحسن الهضم", warning: "لا تخلطه مع غيره", quantity: "شريحتان يومياً", img: "brown-bread.jpg" },
+        { name: "الذرة", type: "allowed", category: "نشويات", desc: "ذرة صفراء مسلوقة أو مشوية", benefits: "غنية بمضادات الأكسدة", warning: "بدون زبدة أو سمن", quantity: "كوز واحد", img: "corn.jpg" },
+        
+        // ==================== الدهون المسموحة ====================
+        { name: "زيت الزيتون", type: "allowed", category: "دهون", desc: "زيت زيتون بكر ممتاز", benefits: "مفيد للقلب والشرايين", warning: "لا تستخدمه للقلي", quantity: "ملعقتان يومياً", img: "olive-oil.jpg" },
+        { name: "الزبد البلدي", type: "allowed", category: "دهون", desc: "زبدة طبيعية من لبن الجاموس", benefits: "مصدر لفيتامين A", warning: "بكميات قليلة جداً", quantity: "ملعقة صغيرة", img: "butter.jpg" },
+        { name: "السمن البلدي", type: "allowed", category: "دهون", desc: "سمن حيواني طبيعي", benefits: "يعطي طاقة ونكهة", warning: "لا تفرط فيه", quantity: "ملعقة صغيرة", img: "ghee.jpg" },
+        
+        // ==================== اللحوم المسموحة ====================
+        { name: "لحم الضأن", type: "allowed", category: "لحوم حمراء", desc: "لحم الخروف", benefits: "غني بالحديد والبروتين", warning: "مرة واحدة أسبوعياً", quantity: "100-150 جرام", img: "lamb.jpg" },
+        { name: "لحم البقر", type: "allowed", category: "لحوم حمراء", desc: "لحم بقري أحمر", benefits: "مصدر ممتاز للبروتين", warning: "اختر القطع القليلة الدهن", quantity: "100 جرام أسبوعياً", img: "beef.jpg" },
+        { name: "لحم الأرنب", type: "allowed", category: "لحوم بيضاء", desc: "لحم أرنب", benefits: "قليل الدهون، سهل الهضم", warning: "لا توجد محاذير", quantity: "بحسب الرغبة", img: "rabbit.jpg" },
+        { name: "الكوارع", type: "allowed", category: "لحوم", desc: "أرجل البقر أو الضأن", benefits: "مفيدة للمفاصل والعظام", warning: "تطهى جيداً", quantity: "مرة أسبوعياً", img: "kawaree.jpg" },
+        { name: "الأسماك", type: "allowed", category: "مأكولات بحرية", desc: "جميع أنواع الأسماك", benefits: "غنية بأوميغا 3", warning: "لا تقلى، اشوي أو اسلق", quantity: "مرتين أسبوعياً", img: "fish.jpg" },
+        { name: "الجمبري", type: "allowed", category: "مأكولات بحرية", desc: "جمبري طازج أو مجمد", benefits: "غني بالبروتين", warning: "لا تكثر منه", quantity: "مرة كل أسبوعين", img: "shrimp.jpg" },
+        { name: "الكابوريا", type: "allowed", category: "مأكولات بحرية", desc: "سلطعون البحر", benefits: "غني بالزنك", warning: "مسلوق أفضل", quantity: "مرة كل أسبوعين", img: "crab.jpg" },
+        { name: "السبيط", type: "allowed", category: "مأكولات بحرية", desc: "حبار أو كاليماري", benefits: "غني بالبروتين", warning: "لا تفرط", quantity: "مرة أسبوعياً", img: "squid.jpg" },
+        
+        // ==================== الفواكه المسموحة ====================
+        { name: "التفاح", type: "allowed", category: "فواكه", desc: "تفاح أحمر أو أخضر", benefits: "غني بالألياف، يشعر بالشبع", warning: "تناوله بقشره", quantity: "تفاحة يومياً", img: "apple.jpg" },
+        { name: "المانجو", type: "allowed", category: "فواكه", desc: "مانجو طازجة", benefits: "غنية بفيتامين A و C", warning: "مرتفعة السكر", quantity: "نصف ثمرة", img: "mango.jpg" },
+        { name: "الرمان", type: "allowed", category: "فواكه", desc: "رمان طازج", benefits: "مفيد للقلب والدم", warning: "لا توجد محاذير", quantity: "نصف ثمرة", img: "pomegranate.jpg" },
+        { name: "الفراولة", type: "allowed", category: "فواكه", desc: "فراولة طازجة", benefits: "غنية بمضادات الأكسدة", warning: "اغسلها جيداً", quantity: "كوب صغير", img: "strawberry.jpg" },
+        { name: "التمر", type: "allowed", category: "فواكه", desc: "تمر طازج أو مجفف", benefits: "مصدر طاقة طبيعي", warning: "مرتفع السعرات", quantity: "3-5 تمرات", img: "dates.jpg" },
+        { name: "التين", type: "allowed", category: "فواكه", desc: "تين طازج أو مجفف", benefits: "غني بالألياف والكالسيوم", warning: "طازج أفضل", quantity: "3-4 ثمرات", img: "fig.jpg" },
+        { name: "الجوافة", type: "allowed", category: "فواكه", desc: "جوافة طازجة", benefits: "غنية بفيتامين C", warning: "لا تفرط", quantity: "ثمرة واحدة", img: "guava.jpg" },
+        { name: "الكمثرى", type: "allowed", category: "فواكه", desc: "كمثرى طازجة", benefits: "مفيدة للهضم", warning: "تناولها بقشرها", quantity: "ثمرة واحدة", img: "pear.jpg" },
+        { name: "المشمش", type: "allowed", category: "فواكه", desc: "مشمش طازج", benefits: "غني بفيتامين A", warning: "لا تفرط", quantity: "3-4 ثمرات", img: "apricot.jpg" },
+        { name: "الخوخ", type: "allowed", category: "فواكه", desc: "خوخ طازج", benefits: "غني بالألياف", warning: "لا توجد محاذير", quantity: "ثمرة واحدة", img: "peach.jpg" },
+        
+        // ==================== الخضروات المسموحة ====================
+        { name: "الخيار", type: "allowed", category: "خضروات", desc: "خيار طازج", benefits: "يرطب الجسم", warning: "متاح في كل بيت", quantity: "بحسب الرغبة", img: "cucumber.jpg" },
+        { name: "الخس", type: "allowed", category: "خضروات", desc: "خس طازج", benefits: "غني بالألياف", warning: "اغسله جيداً", quantity: "بحسب الرغبة", img: "lettuce.jpg" },
+        { name: "الجرجير", type: "allowed", category: "خضروات", desc: "جرجير طازج", benefits: "غني بالحديد", warning: "لا توجد محاذير", quantity: "بحسب الرغبة", img: "arugula.jpg" },
+        { name: "البقدونس", type: "allowed", category: "خضروات", desc: "بقدونس طازج", benefits: "مدر للبول", warning: "لا تفرط", quantity: "بحسب الرغبة", img: "parsley.jpg" },
+        { name: "السبانخ", type: "allowed", category: "خضروات", desc: "سبانخ بلدي", benefits: "غنية بالحديد", warning: "لا تطبخها كثيراً", quantity: "كوب", img: "spinach.jpg" },
+        { name: "الملوخية", type: "allowed", category: "خضروات", desc: "ملوخية طازجة", benefits: "غنية بالألياف", warning: "بدون دجاج", quantity: "كوب", img: "molokhia.jpg" },
+        { name: "الكوسة", type: "allowed", category: "خضروات", desc: "كوسة طازجة", benefits: "سهلة الهضم", warning: "لا توجد محاذير", quantity: "بحسب الرغبة", img: "zucchini.jpg" },
+        { name: "الباذنجان", type: "allowed", category: "خضروات", desc: "باذنجان أسود أو أبيض", benefits: "غني بالألياف", warning: "لا تقليه", quantity: "نصف ثمرة", img: "eggplant.jpg" },
+        { name: "الفلفل الرومي", type: "allowed", category: "خضروات", desc: "فلفل ألوان", benefits: "غني بفيتامين C", warning: "لا توجد محاذير", quantity: "ثمرة واحدة", img: "bell-pepper.jpg" },
+        { name: "البامية", type: "allowed", category: "خضروات", desc: "بامية طازجة", benefits: "غنية بالألياف", warning: "اطبخها بدون لحم", quantity: "كوب", img: "okra.jpg" },
+        
+        // ==================== الأطعمة التي تؤكل بكميات محدودة ====================
+        { name: "الموز", type: "limited", category: "فواكه محدودة", desc: "فاكهة غنية بالبوتاسيوم", benefits: "مفيد للعضلات", warning: "مرتفع السكر والنشويات", quantity: "نصف موزة يومياً", img: "banana.jpg" },
+        { name: "العسل", type: "limited", category: "محليات", desc: "عسل نحل طبيعي", benefits: "مضاد بكتيريا", warning: "مرتفع السعرات", quantity: "ملعقة صغيرة يومياً", img: "honey.jpg" },
+        { name: "الشوكولاتة الداكنة", type: "limited", category: "حلويات", desc: "شوكولاتة 70% فأكثر", benefits: "غنية بمضادات الأكسدة", warning: "مرتفعة الدهون", quantity: "قطعة صغيرة أسبوعياً", img: "dark-chocolate.jpg" },
+        { name: "الجبن الشيدر", type: "limited", category: "أجبان", desc: "جبن شيدر أصفر", benefits: "مصدر كالسيوم", warning: "مسموح بكميات قليلة", quantity: "شريحة صغيرة أسبوعياً", img: "cheddar.jpg" },
+        
+        // ==================== الممنوعات (الخبيثة) حسب الدكتور العوضي ====================
+        { name: "الخبز الأبيض", type: "forbidden", category: "نشويات ممنوعة", desc: "خبز مصنع من دقيق أبيض", benefits: "لا فوائد صحية", warning: "يسبب التهابات", quantity: "ممنوع", img: "white-bread.jpg" },
+        { name: "العيش الفينو", type: "forbidden", category: "نشويات ممنوعة", desc: "خبز أبيض ناعم", benefits: "لا قيمة غذائية", warning: "ضار جداً", quantity: "ممنوع", img: "fino-bread.jpg" },
+        { name: "المكرونة", type: "forbidden", category: "نشويات ممنوعة", desc: "باستا من دقيق أبيض", benefits: "لا فوائد", warning: "تسبب عسر هضم", quantity: "ممنوع", img: "pasta.jpg" },
+        { name: "البيتزا", type: "forbidden", category: "نشويات ممنوعة", desc: "عجينة بيضاء + جبن", benefits: "لا فوائد", warning: "ضارة جداً", quantity: "ممنوع", img: "pizza.jpg" },
+        { name: "الكرواسون", type: "forbidden", category: "معجنات", desc: "عجينة بالزبدة", benefits: "لا فوائد", warning: "مرتفع الدهون", quantity: "ممنوع", img: "croissant.jpg" },
+        { name: "الباتيه", type: "forbidden", category: "معجنات", desc: "معجنات محشية", benefits: "لا فوائد", warning: "ضار", quantity: "ممنوع", img: "pastry.jpg" },
+        { name: "القطايف", type: "forbidden", category: "حلويات", desc: "حلوى رمضانية مقلية", benefits: "لا فوائد", warning: "مقلية وسكر", quantity: "ممنوع", img: "qatayef.jpg" },
+        { name: "الكنافة", type: "forbidden", category: "حلويات", desc: "حلوى شرقية", benefits: "لا فوائد", warning: "دهون وسكر", quantity: "ممنوع", img: "kunafa.jpg" },
+        { name: "البقلاوة", type: "forbidden", category: "حلويات", desc: "حلوى بالمكسرات", benefits: "لا فوائد", warning: "ضار جداً", quantity: "ممنوع", img: "baklava.jpg" },
+        { name: "اللبن", type: "forbidden", category: "ألبان", desc: "حليب البقر", benefits: "مصدر كالسيوم", warning: "يسبب التهابات", quantity: "ممنوع", img: "milk.jpg" },
+        { name: "الزبادي", type: "forbidden", category: "ألبان", desc: "روب أو زبادي", benefits: "مصدر بروبيوتك", warning: "ممنوع في النظام", quantity: "ممنوع", img: "yogurt.jpg" },
+        { name: "الجبن الأبيض", type: "forbidden", category: "أجبان", desc: "جبن أبيض مالح", benefits: "مصدر كالسيوم", warning: "يسبب التهابات", quantity: "ممنوع", img: "white-cheese.jpg" },
+        { name: "الجبن الرومي", type: "forbidden", category: "أجبان", desc: "جبن رومي قديم", benefits: "لا فوائد", warning: "مرتفع الملح", quantity: "ممنوع", img: "romy-cheese.jpg" },
+        { name: "الدجاج", type: "forbidden", category: "لحوم دواجن", desc: "لحم دجاج", benefits: "مصدر بروتين", warning: "يمنعه الدكتور العوضي", quantity: "ممنوع", img: "chicken.jpg" },
+        { name: "البط", type: "forbidden", category: "لحوم دواجن", desc: "لحم بط", benefits: "لا فوائد", warning: "ممنوع", quantity: "ممنوع", img: "duck.jpg" },
+        { name: "الأوز", type: "forbidden", category: "لحوم دواجن", desc: "لحم وز", benefits: "لا فوائد", warning: "ممنوع", quantity: "ممنوع", img: "goose.jpg" },
+        { name: "الحمام", type: "forbidden", category: "لحوم دواجن", desc: "لحم حمام", benefits: "مصدر بروتين", warning: "ممنوع", quantity: "ممنوع", img: "pigeon.jpg" },
+        { name: "الفول", type: "forbidden", category: "بقوليات", desc: "فول مدمس", benefits: "مصدر بروتين", warning: "يسبب غازات وانتفاخات", quantity: "ممنوع", img: "fava-beans.jpg" },
+        { name: "العدس", type: "forbidden", category: "بقوليات", desc: "عدس أصفر أو بني", benefits: "مصدر حديد", warning: "يسبب انتفاخات", quantity: "ممنوع", img: "lentils.jpg" },
+        { name: "الحمص", type: "forbidden", category: "بقوليات", desc: "حمص مسلوق", benefits: "مصدر بروتين", warning: "يسبب غازات", quantity: "ممنوع", img: "chickpeas.jpg" },
+        { name: "الفاصوليا", type: "forbidden", category: "بقوليات", desc: "فاصوليا بيضاء", benefits: "مصدر ألياف", warning: "تسبب انتفاخات", quantity: "ممنوع", img: "beans.jpg" },
+        { name: "اللوبيا", type: "forbidden", category: "بقوليات", desc: "لوبيا سوداء العين", benefits: "مصدر بروتين", warning: "تسبب غازات", quantity: "ممنوع", img: "cowpea.jpg" },
+        { name: "الترمس", type: "forbidden", category: "بقوليات", desc: "ترمس مسلوق", benefits: "مصدر بروتين", warning: "يسبب انتفاخات", quantity: "ممنوع", img: "lupine.jpg" },
+        { name: "البيض", type: "forbidden", category: "منتجات حيوانية", desc: "بيض الدجاج", benefits: "مصدر بروتين", warning: "ممنوع في النظام", quantity: "ممنوع", img: "eggs.jpg" },
+        { name: "البيض البلدي", type: "forbidden", category: "منتجات حيوانية", desc: "بيض بلدي", benefits: "مصدر بروتين", warning: "ممنوع", quantity: "ممنوع", img: "organic-eggs.jpg" },
+        { name: "السكر الأبيض", type: "forbidden", category: "محليات", desc: "سكر الطعام", benefits: "لا فوائد", warning: "ضار جداً", quantity: "ممنوع", img: "sugar.jpg" },
+        { name: "المياه الغازية", type: "forbidden", category: "مشروبات", desc: "بيبسي، كوكاكولا", benefits: "لا فوائد", warning: "ضار جداً", quantity: "ممنوع", img: "soda.jpg" },
+        { name: "العصائر المعلبة", type: "forbidden", category: "مشروبات", desc: "عصائر محلاة", benefits: "لا فوائد", warning: "مرتفعة السكر", quantity: "ممنوع", img: "canned-juice.jpg" },
+        { name: "الطماطم", type: "forbidden", category: "خضروات ممنوعة", desc: "طماطم حمراء", benefits: "غنية بالليكوبين", warning: "ممنوعة في النظام", quantity: "ممنوع", img: "tomato.jpg" },
+        { name: "الجزر", type: "forbidden", category: "خضروات ممنوعة", desc: "جزر برتقالي", benefits: "غني بفيتامين A", warning: "ممنوع", quantity: "ممنوع", img: "carrot.jpg" },
+        { name: "البرتقال", type: "forbidden", category: "فواكه ممنوعة", desc: "برتقال حمضي", benefits: "غني بفيتامين C", warning: "يسبب حموضة", quantity: "ممنوع", img: "orange.jpg" },
+        { name: "اليوسفي", type: "forbidden", category: "فواكه ممنوعة", desc: "يوسفي صغير", benefits: "مصدر فيتامين C", warning: "ممنوع", quantity: "ممنوع", img: "mandarin.jpg" },
+        { name: "الكيوي", type: "forbidden", category: "فواكه ممنوعة", desc: "كيوي أخضر", benefits: "غني بفيتامين C", warning: "ممنوع", quantity: "ممنوع", img: "kiwi.jpg" },
+        { name: "البطيخ", type: "forbidden", category: "فواكه ممنوعة", desc: "بطيخ أحمر", benefits: "يرطب الجسم", warning: "ممنوع في النظام", quantity: "ممنوع", img: "watermelon.jpg" }
+    ];
+    
+    // عرض الأطعمة
+    function displayFoods() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const filterValue = document.getElementById('filterSelect').value;
+        
+        let filtered = foodsDatabase;
+        
+        if (filterValue !== 'all') {
+            filtered = filtered.filter(food => food.type === filterValue);
+        }
+        
+        if (searchValue !== '') {
+            filtered = filtered.filter(food => 
+                food.name.includes(searchValue) || 
+                food.category.includes(searchValue) ||
+                food.desc.includes(searchValue)
+            );
+        }
+        
+        const container = document.getElementById('foodsGrid');
+        
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 40px;">❌ لا توجد أطعمة مطابقة للبحث</div>';
+            return;
+        }
+        
+        container.innerHTML = filtered.map(food => `
+            <div class="food-card">
+                <div class="food-card-header">
+                    <h3>${food.name}</h3>
+                    <small class="food-category">${food.category}</small>
+                </div>
+                <div class="food-card-image">
+                    <img src="images/${food.img}" alt="${food.name}" onerror="this.src='images/placeholder.jpg'">
+                </div>
+                <div class="food-card-body">
+                    <p><strong>📝 الوصف:</strong> ${food.desc}</p>
+                    <p style="color: #a8e6cf;"><strong>🌟 الفوائد:</strong> ${food.benefits}</p>
+                    <p style="color: #ffab91;"><strong>⚠️ تحذير:</strong> ${food.warning}</p>
+                    <p><strong>📊 الكمية:</strong> ${food.quantity}</p>
+                </div>
+                <div class="food-card-footer ${food.type}">
+                    ${food.type === 'allowed' ? '✅ طيب (مسموح)' : food.type === 'forbidden' ? '❌ خبيث (ممنوع)' : '⚠️ بكميات محدودة'}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    document.getElementById('searchInput').addEventListener('input', displayFoods);
+    document.getElementById('filterSelect').addEventListener('change', displayFoods);
+    
+    displayFoods();
+</script>
+
+<style>
+    /* تنسيق إضافي للبطاقات */
+    .food-card {
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .food-card-header {
+        padding: 15px;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.3);
+    }
+    
+    .food-card-header h3 {
+        color: #ffd700;
+        margin: 0 0 5px 0;
+        font-size: 1.2rem;
+    }
+    
+    .food-category {
+        color: #c5b89a;
+        font-size: 0.7rem;
+    }
+    
+    .food-card-image {
+        width: 100%;
+        height: 150px;
+        overflow: hidden;
+        background: #1a472a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .food-card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s;
+    }
+    
+    .food-card:hover .food-card-image img {
+        transform: scale(1.05);
+    }
+    
+    .food-card-body {
+        padding: 15px;
+        flex: 1;
+    }
+    
+    .food-card-body p {
+        margin: 8px 0;
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+    
+    .food-card-footer {
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    
+    .food-card-footer.allowed {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .food-card-footer.forbidden {
+        background: #f44336;
+        color: white;
+    }
+    
+    .food-card-footer.limited {
+        background: #ff9800;
+        color: white;
+    }
+    
+    .foods-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 25px;
+    }
+</style>
+
+</body>
+</html>
