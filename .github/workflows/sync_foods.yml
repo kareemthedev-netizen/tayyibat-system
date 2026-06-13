@@ -1,0 +1,28 @@
+name: مزامنة الأطعمة مع Firebase
+
+on:
+  schedule:
+    - cron: '0 10 * * *'   # يومياً الساعة 10 صباحاً
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests pillow tavily-python firebase-admin beautifulsoup4
+      - name: تشغيل السكريبت
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: python scripts/sync_foods_to_firebase.py
+      - name: رفع الصور إلى GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "bot@github.com"
+          git add images/
+          git diff --staged --quiet || git commit -m "🤖 تحديث صور الأطعمة"
+          git push
