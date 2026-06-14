@@ -2,9 +2,11 @@ name: مزامنة الأطعمة مع Firebase
 
 on:
   push:
+    branches: [main, master]
     paths:
-      - 'foods.json'          # يتشغل عند تعديل foods.json
-  workflow_dispatch:          # أو يدويًا من GitHub
+      - 'foods.json'
+      - 'scripts/sync_foods_to_firebase.py'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,21 +14,32 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: تحميل الكود من GitHub
+        uses: actions/checkout@v4
+
+      - name: إعداد Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install requests pillow tavily-python firebase-admin
+
+      - name: تثبيت المكتبات المطلوبة
+        run: |
+          pip install requests pillow firebase-admin
+          pip install tavily-python  # اختياري - لو عندك مفتاح Tavily
+
       - name: تشغيل سكريبت المزامنة
         env:
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: python scripts/sync_foods_to_firebase.py
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+        run: |
+          python scripts/sync_foods_to_firebase.py
+
       - name: رفع الصور الجديدة إلى GitHub
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "bot@github.com"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add images/
-          git diff --staged --quiet || git commit -m "🤖 إضافة صور جديدة"
+          git diff --staged --quiet || git commit -m "🤖 إضافة صور جديدة [skip ci]"
           git push
