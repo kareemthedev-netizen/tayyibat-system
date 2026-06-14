@@ -1,9 +1,13 @@
 name: مزامنة الأطعمة مع Firebase
 
 on:
-  schedule:
-    - cron: '0 10 * * *'   # يومياً الساعة 10 صباحاً
-  workflow_dispatch:
+  push:
+    paths:
+      - 'foods.json'          # يتشغل عند تعديل foods.json
+  workflow_dispatch:          # أو يدويًا من GitHub
+
+permissions:
+  contents: write
 
 jobs:
   sync:
@@ -13,16 +17,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install requests pillow tavily-python firebase-admin beautifulsoup4
-      - name: تشغيل السكريبت
+      - run: pip install requests pillow tavily-python firebase-admin
+      - name: تشغيل سكريبت المزامنة
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: python scripts/sync_foods_to_firebase.py
-      - name: رفع الصور إلى GitHub
+      - name: رفع الصور الجديدة إلى GitHub
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "bot@github.com"
           git add images/
-          git diff --staged --quiet || git commit -m "🤖 تحديث صور الأطعمة"
+          git diff --staged --quiet || git commit -m "🤖 إضافة صور جديدة"
           git push
