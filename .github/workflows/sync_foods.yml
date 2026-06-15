@@ -1,41 +1,49 @@
-name: مزامنة الأطعمة مع Firebase
+name: مزامنة الأطعمة والصور مع Firebase
 
 on:
+  # يتشغل تلقائياً عند تعديل الـ JSON أو السكريبت نفسه
   push:
     branches: [main, master]
     paths:
       - 'foods.json'
       - 'scripts/sync_foods_to_firebase.py'
+  # يتشغل يدوياً من خلال زر في GitHub
   workflow_dispatch:
 
+# الصلاحيات المطلوبة لرفع التغييرات (الصور الجديدة) إلى GitHub
 permissions:
   contents: write
 
 jobs:
-  sync:
+  sync-data-and-images:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: تحميل الكود من GitHub
+      # 1. تحميل الكود من GitHub
+      - name: تحميل الكود
         uses: actions/checkout@v4
 
+      # 2. إعداد بيئة Python
       - name: إعداد Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: تثبيت المكتبات المطلوبة
+      # 3. تثبيت المكتبات التي يحتاجها السكريبت
+      - name: تثبيت المكتبات
         run: |
           pip install requests pillow firebase-admin
-          pip install tavily-python  # اختياري - لو عندك مفتاح Tavily
+          pip install tavily-python
 
+      # 4. تشغيل السكريبت الأساسي
       - name: تشغيل سكريبت المزامنة
         env:
+          # المفاتيح السرية المسجلة في GitHub Secrets
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           python scripts/sync_foods_to_firebase.py
 
+      # 5. رفع الصور الجديدة إلى GitHub (إذا وُجدت)
       - name: رفع الصور الجديدة إلى GitHub
         run: |
           git config user.name "github-actions[bot]"
