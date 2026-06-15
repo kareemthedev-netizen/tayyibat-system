@@ -1,12 +1,13 @@
 import os
 import json
 import requests
+import re
+import time
 from firebase_admin import credentials, firestore, initialize_app
 from datetime import datetime
-import time
 
 FIREBASE_CRED = json.loads(os.environ.get("FIREBASE_SERVICE_ACCOUNT"))
-TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
+PEXELS_KEY = os.environ.get("PEXELS_API_KEY")
 
 cred = credentials.Certificate(FIREBASE_CRED)
 initialize_app(cred)
@@ -14,24 +15,22 @@ db = firestore.client()
 
 PLACEHOLDER = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D8%A9+%D8%BA%D9%8A%D8%B1+%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9"
 
-# ========== كلمات البحث ==========
-SEARCH = {
+SEARCH_WORDS = {
     "الأرز": "rice grains white background",
     "البطاطس": "potato isolated white",
     "المكرونة": "pasta isolated white",
     "الدجاج": "chicken breast white",
     "الموز": "banana isolated white",
-    "التفاح": "red apple isolated",
 }
 
 def search_word(food):
-    return SEARCH.get(food, f"{food} food white background isolated")
+    return SEARCH_WORDS.get(food, f"{food} food white background isolated")
 
-# ========== الأداة 1: SearXNG (مجاني) ==========
+# ========== 1. SearXNG (مجاني) ==========
 def search_searxng(food):
     try:
         q = search_word(food)
-        r = requests.get("https://searx.tiekoetter.com/search", 
+        r = requests.get("https://searx.tiekoetter.com/search",
                          params={'q': q, 'categories': 'images', 'format': 'json'},
                          timeout=10)
         if r.status_code == 200 and r.json().get('results'):
@@ -40,11 +39,11 @@ def search_searxng(food):
         pass
     return None
 
-# ========== الأداة 2: Openverse (مجاني) ==========
+# ========== 2. Openverse (مجاني) ==========
 def search_openverse(food):
     try:
         q = search_word(food)
-        r = requests.get(f"https://api.openverse.engineering/v1/images/", 
+        r = requests.get("https://api.openverse.engineering/v1/images/",
                          params={'q': q, 'page_size': 5},
                          timeout=10)
         if r.status_code == 200 and r.json().get('results'):
@@ -53,119 +52,163 @@ def search_openverse(food):
         pass
     return None
 
-# ========== الأداة 3: LibreStock (مجاني) ==========
-def search_librestock(food):
+# ========== 3. DuckDuckGo (مجاني) ==========
+def search_duckduckgo(food):
     try:
         q = search_word(food)
-        r = requests.get(f"https://librestock.com/api/v1/search?q={q}", timeout=10)
-        if r.status_code == 200 and r.json().get('images'):
-            return r.json()['images'][0].get('thumb')
+        r = requests.get("https://api.duckduckgo.com/",
+                         params={'q': q, 'format': 'json', 'no_html': 1, 'skip_disambig': 1},
+                         timeout=10)
+        if r.status_code == 200 and r.json().get('Image'):
+            return r.json()['Image']
     except:
         pass
     return None
 
-# ========== Tavily (احتياطي - بمفتاح) ==========
-def search_tavily(food):
-    if not TAVILY_API_KEY:
+# ========== 4. Bing Images (مجاني) ==========
+def search_bing(food):
+    try:
+        q = search_word(food)
+        r = requests.get(f"https://www.bing.com/images/search?q={q}&form=HDRSC2&first=1",
+                         headers={'User-Agent': 'Mozilla/5.0'},
+                         timeout=10)
+        if r.status_code == 200:
+            # استخراج رابط الصورة الأولى
+            match = re.search(r'murl":"([^"]+)"', r.text)
+            if match:
+                return match.group(1)
+    except:
+        pass
+    return None
+
+# ========== 5. Yandex (مجاني) ==========
+def search_yandex(food):
+    try:
+        q = search_word(food)
+        url = f"https://yandex.com/images/search?text={q}&isize=large"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code == 200:
+            images = re.findall(r'https?://[^"\']+\.(jpg|jpeg|png|webp)', r.text)
+            if images:
+                return images[0]
+    except:
+        pass
+    return None
+
+# ========== 6. Baidu (مجاني) ==========
+def search_baidu(food):
+    try:
+        q = search_word(food)
+        r = requests.get(f"https://image.baidu.com/search/index?tn=baiduimage&word={q}",
+                         headers={'User-Agent': 'Mozilla/5.0'},
+                         timeout=10)
+        if r.status_code == 200:
+            images = re.findall(r'"objURL":"([^"]+)"', r.text)
+            if images:
+                return images[0].replace('\\', '')
+    except:
+        pass
+    return None
+
+# ========== 7. 360 Search (مجاني) ==========
+def search_360(food):
+    try:
+        q = search_word(food)
+        r = requests.get(f"https://image.so.com/i?q={q}&src=tab_img",
+                         headers={'User-Agent': 'Mozilla/5.0'},
+                         timeout=10)
+        if r.status_code == 200:
+            images = re.findall(r'"img":"([^"]+)"', r.text)
+            if images:
+                return images[0].replace('\\/', '/')
+    except:
+        pass
+    return None
+
+# ========== 8. Pexels (بـ API Key) ==========
+def search_pexels(food):
+    if not PEXELS_KEY:
         return None
     try:
-        from tavily import TavilyClient
-        c = TavilyClient(api_key=TAVILY_API_KEY)
-        r = c.search(f"{food} طعام خلفية بيضاء", include_images=True, max_results=1)
-        return r.get('images', [None])[0]
+        q = search_word(food)
+        r = requests.get("https://api.pexels.com/v1/search",
+                         headers={"Authorization": PEXELS_KEY},
+                         params={'query': q, 'per_page': 1},
+                         timeout=10)
+        if r.status_code == 200 and r.json().get('photos'):
+            return r.json()['photos'][0]['src']['medium']
     except:
-        return None
+        pass
+    return None
 
-# ========== نظام البحث ==========
+# ========== نظام البحث الطبقي ==========
 def get_image(food):
     print(f"  🔍 {food}...", end=" ")
     
-    # الأدوات المجانية بدون API
-    url = search_searxng(food)
-    if url:
-        print("✅ SearXNG")
-        return url
+    # 7 أدوات مجانية بدون API
+    for name, func in [
+        ("SearXNG", search_searxng),
+        ("Openverse", search_openverse),
+        ("DuckDuckGo", search_duckduckgo),
+        ("Bing", search_bing),
+        ("Yandex", search_yandex),
+        ("Baidu", search_baidu),
+        ("360", search_360),
+    ]:
+        url = func(food)
+        if url:
+            print(f"✅ {name}")
+            return url
     
-    url = search_openverse(food)
+    # الأداة الاحتياطية بـ API
+    url = search_pexels(food)
     if url:
-        print("✅ Openverse")
-        return url
-    
-    url = search_librestock(food)
-    if url:
-        print("✅ LibreStock")
-        return url
-    
-    # الاحتياطي: Tavily (بمفتاح)
-    url = search_tavily(food)
-    if url:
-        print("⚠️ Tavily")
+        print("⚠️ Pexels (API)")
         return url
     
     print("❌ مفيش")
     return None
 
-# ========== المزامنة مع Firebase ==========
+# ========== المزامنة ==========
 def sync():
     print("=" * 60)
-    print("🚀 بدء مزامنة الأطعمة والصور")
+    print("🚀 بدء تحديث الصور (7 مجانية + 1 API)")
+    print("    الأدوات: SearXNG, Openverse, DuckDuckGo, Bing, Yandex, Baidu, 360, Pexels")
     print(f"📅 {datetime.now()}")
     print("=" * 60)
     
-    # جلب الأطعمة من Firebase
-    docs = db.collection('foods').stream()
-    foods_in_firebase = {doc.id: doc for doc in docs}
-    
-    # جلب الأطعمة من foods.json
-    with open("foods.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-    
-    all_foods = data.get("allowed", []) + data.get("forbidden", []) + data.get("limited", [])
-    
-    # إضافة الأطعمة الجديدة
-    new_count = 0
-    for food in all_foods:
-        name = food['name']
-        if name not in foods_in_firebase:
-            db.collection('foods').document(name).set({
-                "name": name,
-                "category": food.get("category", ""),
-                "desc": food.get("desc", ""),
-                "benefits": food.get("benefits", ""),
-                "warning": food.get("warning", ""),
-                "quantity": food.get("quantity", ""),
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            })
-            print(f"✅ إضافة: {name}")
-            new_count += 1
-    
-    # تحديث الصور
     docs = db.collection('foods').stream()
     updated = 0
+    total = 0
+    
     for doc in docs:
-        food_data = doc.to_dict()
+        total += 1
         food_name = doc.id
-        current_img = food_data.get('imageUrl', '')
+        data = doc.to_dict()
+        current = data.get('imageUrl', '')
         
-        if current_img and current_img != PLACEHOLDER:
-            print(f"⏩ {food_name}: صورة موجودة")
+        if current and current != PLACEHOLDER:
+            print(f"⏩ {food_name}: موجودة")
             continue
         
-        print(f"\n📸 {food_name}: أبحث عن صورة...")
+        print(f"\n📸 {food_name}: أبحث...")
         img = get_image(food_name)
         
         if img:
             doc.reference.update({'imageUrl': img, 'updatedAt': firestore.SERVER_TIMESTAMP})
             updated += 1
+            print(f"  ✅ تم تحديث {food_name}")
         else:
             doc.reference.update({'imageUrl': PLACEHOLDER, 'updatedAt': firestore.SERVER_TIMESTAMP})
+            print(f"  ⚠️ صورة افتراضية لـ {food_name}")
         
         time.sleep(0.5)
     
     print("\n" + "=" * 60)
-    print(f"📊 التقرير:")
-    print(f"   ✅ أضيف جديد: {new_count}")
-    print(f"   🖼️ تم تحديث صور: {updated}")
+    print(f"📊 التقرير النهائي:")
+    print(f"   🖼️ تم تحديث: {updated}")
+    print(f"   📋 إجمالي الأطعمة: {total}")
     print("🎉 انتهى!")
 
 if __name__ == "__main__":
