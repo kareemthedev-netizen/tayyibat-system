@@ -3,6 +3,7 @@ import json
 import requests
 from firebase_admin import credentials, firestore, initialize_app
 from datetime import datetime
+import time
 
 # ========== الإعدادات ==========
 FIREBASE_CRED = json.loads(os.environ.get("FIREBASE_SERVICE_ACCOUNT"))
@@ -17,38 +18,38 @@ db = firestore.client()
 
 PLACEHOLDER_URL = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D8%A9+%D8%BA%D9%8A%D8%B1+%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9"
 
-# ========== كلمات بحث مخصصة ==========
+# ========== كلمات بحث مخصصة (عشان يجيب صور المنتج بس بخلفية بيضاء) ==========
 SEARCH_QUERIES = {
-    "الأرز": "rice grains white background studio lighting",
-    "البطاطس": "potato isolated white background high resolution",
-    "خبز القمح الكامل": "whole wheat bread isolated white background",
-    "الذرة": "corn cob isolated white background",
-    "زيت الزيتون": "olive oil bottle white background product",
-    "لحم الضأن": "raw lamb meat cut white background",
-    "لحم البقر": "raw beef steak isolated white background",
-    "السمك البلطي": "fresh tilapia fish white background",
+    "الأرز": "rice grains white background",
+    "البطاطس": "potato isolated white background",
+    "خبز القمح الكامل": "whole wheat bread isolated",
+    "الذرة": "corn cob isolated",
+    "زيت الزيتون": "olive oil bottle white background",
+    "لحم الضأن": "lamb meat cut white background",
+    "لحم البقر": "beef steak isolated",
+    "السمك البلطي": "tilapia fish white background",
     "التفاح": "red apple isolated white background",
     "الموز": "banana isolated white background",
-    "المانجو": "mango fruit isolated white background",
-    "الفراولة": "strawberries isolated white background",
-    "التمر": "dates fruit isolated white background",
-    "الخيار": "cucumber isolated white background",
-    "الخس": "lettuce leaves isolated white background",
-    "السبانخ": "spinach leaves isolated white background",
-    "الملوخية": "molokhia leaves white background",
-    "المكرونة": "pasta isolated white background high resolution",
-    "اليوسفي": "tangerine fruit isolated white background",
-    "الدجاج": "raw chicken breast white background product photography",
-    "الخبز الأبيض": "white bread sliced isolated white background",
-    "اللبن": "glass of milk isolated white background",
-    "الفول": "fava beans isolated white background",
+    "المانجو": "mango fruit isolated",
+    "الفراولة": "strawberries isolated",
+    "التمر": "dates fruit isolated",
+    "الخيار": "cucumber isolated",
+    "الخس": "lettuce leaves isolated",
+    "السبانخ": "spinach leaves isolated",
+    "الملوخية": "molokhia leaves",
+    "المكرونة": "pasta isolated white background",
+    "اليوسفي": "tangerine fruit isolated",
+    "الدجاج": "chicken breast white background",
+    "الخبز الأبيض": "white bread sliced isolated",
+    "اللبن": "glass of milk isolated",
+    "الفول": "fava beans isolated",
     "البيض": "eggs isolated white background",
 }
 
 def get_search_query(food_name):
     return SEARCH_QUERIES.get(food_name, f"{food_name} food white background isolated")
 
-# ========== فحص الرابط ==========
+# ========== فحص الرابط (يتأكد إن الرابط شغال) ==========
 def check_image_url(url):
     if not url:
         return False
@@ -61,16 +62,23 @@ def check_image_url(url):
             if 'image' in content_type:
                 return True
     except:
-        pass
+        try:
+            response = requests.get(url, timeout=10, stream=True)
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                if 'image' in content_type:
+                    return True
+        except:
+            pass
     return False
 
-# ========== مصادر البحث ==========
+# ========== المصدر 1: SearXNG (مجاني، بدون API) ==========
 def search_searxng(food_name):
     try:
         query = get_search_query(food_name)
         url = "https://searx.tiekoetter.com/search"
         params = {'q': query, 'categories': 'images', 'format': 'json', 'image_proxy': True}
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, timeout=15)
         if response.status_code == 200:
             data = response.json()
             if data.get('results'):
@@ -80,15 +88,16 @@ def search_searxng(food_name):
                         if 'white' in img_url.lower() or 'isolated' in img_url.lower():
                             return img_url
                 return data['results'][0].get('img_src')
-    except:
-        pass
+    except Exception as e:
+        print(f"  ⚠️ SearXNG: {e}")
     return None
 
+# ========== المصدر 2: Openverse (مجاني، بدون API) ==========
 def search_openverse(food_name):
     try:
         query = get_search_query(food_name)
-        url = f"https://api.openverse.engineering/v1/images/?q={query}&page_size=10"
-        response = requests.get(url, timeout=10)
+        url = f"https://api.openverse.engineering/v1/images/?q={query}&page_size=5"
+        response = requests.get(url, timeout=15)
         if response.status_code == 200:
             data = response.json()
             if data.get('results'):
@@ -98,26 +107,29 @@ def search_openverse(food_name):
                         if 'white' in img_url.lower() or 'isolated' in img_url.lower():
                             return img_url
                 return data['results'][0].get('url')
-    except:
-        pass
+    except Exception as e:
+        print(f"  ⚠️ Openverse: {e}")
     return None
 
+# ========== المصدر 3: Tavily (احتياطي، بمفتاح API) ==========
 def search_tavily(food_name):
     if not TAVILY_API_KEY:
         return None
     try:
         from tavily import TavilyClient
         client = TavilyClient(api_key=TAVILY_API_KEY)
-        response = client.search(f"{food_name} طعام خلفية بيضاء", include_images=True, max_results=3)
+        response = client.search(f"{food_name} طعام خلفية بيضاء", include_images=True, max_results=2)
         images = response.get('images', [])
         return images[0] if images else None
-    except:
-        pass
+    except Exception as e:
+        print(f"  ⚠️ Tavily: {e}")
     return None
 
+# ========== نظام البحث الطبقي ==========
 def get_image_url(food_name):
     print(f"  🔍 {food_name}...", end=" ")
     
+    # المجانية أولاً
     url = search_searxng(food_name)
     if url:
         print("✅ SearXNG")
@@ -128,39 +140,46 @@ def get_image_url(food_name):
         print("✅ Openverse")
         return url
     
+    # الاحتياطي بـ API
     url = search_tavily(food_name)
     if url:
-        print("⚠️ Tavily")
+        print("⚠️ Tavily (API)")
         return url
     
     print("❌ مفيش")
     return None
 
+# ========== الوظيفة الرئيسية: تحديث الصور المعطلة بس ==========
 def update_broken_images_only():
-    print("🚀 بدء فحص وتحديث الروابط...")
-    print("=" * 50)
+    print("=" * 60)
+    print("🚀 بدء تحديث روابط الصور (المجانية أولاً، ثم Tavily)")
+    print(f"📅 التاريخ: {datetime.now()}")
+    print("=" * 60)
     
-    docs = db.collection('foods').get()
-    docs_list = list(docs)
-    total = len(docs_list)
+    # جلب جميع الأطعمة من Firebase
+    docs = db.collection('foods').stream()
     updated = 0
     working = 0
     failed = 0
+    total = 0
     
-    for doc in docs_list:
+    for doc in docs:
+        total += 1
         food_data = doc.to_dict()
         food_name = doc.id
         current_image = food_data.get('imageUrl', '')
         
         print(f"\n📸 {food_name}:", end=" ")
         
+        # فحص الرابط الحالي
         if check_image_url(current_image):
-            print("✅ شغال ✓")
+            print("✅ رابط شغال ✓")
             working += 1
             continue
         
-        print("❌ بايظ، أبحث...")
+        print("❌ بايظ أو مفقود، أبحث...")
         
+        # البحث عن رابط جديد
         image_url = get_image_url(food_name)
         
         if image_url:
@@ -177,13 +196,18 @@ def update_broken_images_only():
             })
             failed += 1
             print(f"  ⚠️ صورة افتراضية لـ {food_name}")
+        
+        # تأخير صغير عشان ما نضغطش على السيرفرات
+        time.sleep(0.5)
     
-    print("\n" + "=" * 50)
-    print(f"✅ شغال وتم تخطيه: {working}")
-    print(f"🔄 تم تحديث روابط بايظة: {updated}")
-    print(f"⚠️ صور افتراضية: {failed}")
-    print(f"📋 المجموع: {total}")
-    print("🎉 انتهى!")
+    print("\n" + "=" * 60)
+    print(f"📊 التقرير النهائي:")
+    print(f"   ✅ روابط شغالة وتم تخطيها: {working}")
+    print(f"   🔄 تم تحديث روابط جديدة: {updated}")
+    print(f"   ⚠️ صور افتراضية: {failed}")
+    print(f"   📋 إجمالي الأطعمة: {total}")
+    print("🎉 انتهى التحديث!")
 
+# ========== تشغيل السكريبت ==========
 if __name__ == "__main__":
     update_broken_images_only()
