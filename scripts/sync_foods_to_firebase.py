@@ -3,6 +3,7 @@ import json
 import requests
 from firebase_admin import credentials, firestore, initialize_app
 from datetime import datetime
+from urllib.parse import urlparse
 
 # ========== الإعدادات ==========
 FIREBASE_CRED = json.loads(os.environ.get("FIREBASE_SERVICE_ACCOUNT"))
@@ -19,100 +20,59 @@ PLACEHOLDER_URL = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D
 
 # ========== كلمات بحث مخصصة (صور بخلفية بيضاء وجودة عالية) ==========
 SEARCH_QUERIES = {
-    # نشويات مسموحة
     "الأرز": "rice grains white background studio lighting",
     "البطاطس": "potato isolated white background high resolution",
     "خبز القمح الكامل": "whole wheat bread isolated white background",
     "الذرة": "corn cob isolated white background",
-    "الشوفان": "oats oatmeal white background",
-    "الفريك": "freekeh grain white background",
-    "البرغل": "bulgur wheat white background",
-    
-    # دهون مسموحة
     "زيت الزيتون": "olive oil bottle white background product",
-    "السمن البلدي": "ghee white background",
-    "الزبد البلدي": "butter isolated white background",
-    
-    # لحوم مسموحة
     "لحم الضأن": "raw lamb meat cut white background",
     "لحم البقر": "raw beef steak isolated white background",
-    "لحم الأرنب": "rabbit meat white background",
-    "الكوارع": "beef trotters white background",
     "السمك البلطي": "fresh tilapia fish white background",
-    "السمك البوري": "fresh mullet fish white background",
-    "الجمبري": "shrimp isolated white background",
-    "الكابوريا": "crab isolated white background",
-    "السبيط": "squid isolated white background",
-    
-    # فواكه مسموحة
     "التفاح": "red apple isolated white background",
+    "الموز": "banana isolated white background",
     "المانجو": "mango fruit isolated white background",
-    "الرمان": "pomegranate isolated white background",
     "الفراولة": "strawberries isolated white background",
     "التمر": "dates fruit isolated white background",
-    "التين": "fig fruit isolated white background",
-    "الجوافة": "guava isolated white background",
-    "الكمثرى": "pear isolated white background",
-    "المشمش": "apricot isolated white background",
-    "الخوخ": "peach isolated white background",
-    "العنب": "grapes isolated white background",
-    
-    # خضروات مسموحة
     "الخيار": "cucumber isolated white background",
     "الخس": "lettuce leaves isolated white background",
-    "الجرجير": "arugula leaves white background",
-    "البقدونس": "parsley leaves white background",
     "السبانخ": "spinach leaves isolated white background",
     "الملوخية": "molokhia leaves white background",
-    "الكوسة": "zucchini isolated white background",
-    "الباذنجان": "eggplant isolated white background",
-    "الفلفل الرومي": "bell pepper isolated white background",
-    "البامية": "okra isolated white background",
-    
-    # ممنوعات (للتوعية)
     "المكرونة": "pasta isolated white background high resolution",
     "اليوسفي": "tangerine fruit isolated white background",
-    "الخبز الأبيض": "white bread sliced isolated white background",
-    "العيش الفينو": "french bread white background",
-    "البيتزا": "pizza isolated white background",
-    "الكرواسون": "croissant isolated white background",
-    "القطايف": "qatayef white background",
-    "الكنافة": "kunafa white background",
-    "البقلاوة": "baklava white background",
     "الدجاج": "raw chicken breast white background product photography",
-    "البط": "duck meat white background",
-    "الأوز": "goose meat white background",
-    "الحمام": "pigeon meat white background",
-    "البيض": "eggs isolated white background",
-    "اللبن": "milk glass isolated white background",
-    "الزبادي": "yogurt isolated white background",
-    "الجبن الأبيض": "white cheese isolated white background",
-    "الجبن الرومي": "romy cheese white background",
+    "الخبز الأبيض": "white bread sliced isolated white background",
+    "اللبن": "glass of milk isolated white background",
     "الفول": "fava beans isolated white background",
-    "العدس": "lentils isolated white background",
-    "الحمص": "chickpeas isolated white background",
-    "الفاصوليا": "beans isolated white background",
-    "اللوبيا": "cowpeas white background",
-    "السكر الأبيض": "sugar white background",
-    "العصائر المعلبة": "canned juice white background",
-    "الطماطم": "tomato isolated white background",
-    "الجزر": "carrot isolated white background",
-    "البرتقال": "orange isolated white background",
-    "الكيوي": "kiwi isolated white background",
-    "البطيخ": "watermelon isolated white background",
-    
-    # محدود
-    "الموز": "banana isolated white background",
-    "العسل": "honey jar isolated white background product",
-    "الشوكولاتة الداكنة": "dark chocolate bar isolated white background",
-    "الجبن الشيدر": "cheddar cheese slice isolated white background"
+    "البيض": "eggs isolated white background",
 }
 
 def get_search_query(food_name):
     return SEARCH_QUERIES.get(food_name, f"{food_name} food white background isolated")
 
-# ========== مصادر البحث المجانية ==========
+# ========== فحص الرابط (شغال ولا لأ) ==========
+def check_image_url(url):
+    """تتحقق إذا كان الرابط شغالاً ويعرض صورة حقيقية"""
+    if not url:
+        return False
+    if 'placeholder' in url or url == PLACEHOLDER_URL:
+        return False
+    try:
+        response = requests.head(url, timeout=10, allow_redirects=True)
+        if response.status_code == 200:
+            content_type = response.headers.get('content-type', '')
+            if 'image' in content_type:
+                return True
+        # لو الـ HEAD مش شغال، نجرب GET بس مع استهلاك جزء صغير
+        response = requests.get(url, timeout=10, stream=True)
+        if response.status_code == 200:
+            content_type = response.headers.get('content-type', '')
+            if 'image' in content_type:
+                return True
+    except Exception as e:
+        print(f"  ⚠️ فشل فحص الرابط: {e}")
+    return False
 
+# ========== مصادر البحث المجانية ==========
 def search_searxng(food_name):
     try:
         query = get_search_query(food_name)
@@ -125,10 +85,8 @@ def search_searxng(food_name):
                 for result in data['results']:
                     img_url = result.get('img_src')
                     if img_url and not img_url.endswith('.svg') and 'placeholder' not in img_url:
-                        # تفضيل الصور ذات الخلفية البيضاء
                         if 'white' in img_url.lower() or 'isolated' in img_url.lower():
                             return img_url
-                # لو محصلش صورة بخلفية بيضا، خد أي صورة
                 return data['results'][0].get('img_src')
     except Exception as e:
         print(f"  ⚠️ SearXNG: {e}")
@@ -145,7 +103,6 @@ def search_openverse(food_name):
                 for result in data['results']:
                     img_url = result.get('url')
                     if img_url:
-                        # تفضيل الصور ذات الخلفية البيضاء
                         if 'white' in img_url.lower() or 'isolated' in img_url.lower():
                             return img_url
                 return data['results'][0].get('url')
@@ -187,30 +144,35 @@ def get_image_url(food_name):
     print("❌ مفيش صورة")
     return None
 
-def update_all_foods_images():
-    """يحدث روابط الصور لجميع الأطعمة في Firebase"""
-    print("🚀 بدء تحديث روابط الصور في Firebase...")
+def update_broken_images_only():
+    """يحدث فقط الصور اللي رابطها غلط أو مش شغالة"""
+    print("🚀 بدء فحص وتحديث روابط الصور المعطلة...")
     print("=" * 60)
     print(f"📅 التاريخ: {datetime.now()}")
-    print("🎯 جودة الصور: خلفية بيضاء - جودة عالية - المنتج فقط")
+    print("🔍 سأفحص كل رابط: لو شغال → أتخطى، لو بايظ → أبحث عن رابط جديد")
     print("=" * 60)
     
     docs = db.collection('foods').get()
     updated = 0
-    skipped = 0
+    working = 0
+    failed = 0
     
     for doc in docs:
         food_data = doc.to_dict()
         food_name = doc.id
         current_image = food_data.get('imageUrl', '')
         
-        # لو الرابط مش placeholder، نتخطى
-        if current_image and current_image != PLACEHOLDER_URL and 'placeholder' not in current_image:
-            print(f"⏩ {food_name}: رابط موجود ✓")
-            skipped += 1
+        print(f"\n📸 {food_name}:", end=" ")
+        
+        # فحص الرابط الحالي
+        if check_image_url(current_image):
+            print(f"✅ رابط شغال ✓")
+            working += 1
             continue
         
-        print(f"\n📸 {food_name}: أبحث عن صورة جودة عالية...")
+        print(f"❌ رابط بايظ أو مفقود، أبحث عن رابط جديد...")
+        
+        # البحث عن رابط جديد
         image_url = get_image_url(food_name)
         
         if image_url:
@@ -225,14 +187,16 @@ def update_all_foods_images():
                 'imageUrl': PLACEHOLDER_URL,
                 'updatedAt': firestore.SERVER_TIMESTAMP
             })
+            failed += 1
             print(f"  ⚠️ تم وضع صورة افتراضية لـ {food_name}")
     
     print("\n" + "=" * 60)
     print(f"📊 التقرير النهائي:")
-    print(f"   ✅ تم تحديث {updated} صورة جديدة")
-    print(f"   ⏩ تم تخطي {skipped} صورة موجودة")
+    print(f"   ✅ روابط شغالة وتم تخطيها: {working}")
+    print(f"   🔄 تم تحديث روابط بايظة: {updated}")
+    print(f"   ⚠️ لم نجد صور ووضعنا افتراضية: {failed}")
     print(f"   📋 إجمالي الأطعمة: {docs.size}")
     print("🎉 انتهى التحديث!")
 
 if __name__ == "__main__":
-    update_all_foods_images()
+    update_broken_images_only()
