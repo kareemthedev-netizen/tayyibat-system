@@ -23,35 +23,37 @@ PLACEHOLDER_URL = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D
 
 # ========== كلمات بحث مخصصة ==========
 SEARCH_QUERIES = {
-    "الأرز": "rice grains",
-    "البطاطس": "potato vegetable",
-    "خبز القمح الكامل": "whole wheat bread",
-    "الذرة": "corn cob",
-    "زيت الزيتون": "olive oil",
-    "لحم الضأن": "lamb meat",
-    "لحم البقر": "beef steak",
-    "السمك البلطي": "fresh fish tilapia",
-    "التفاح": "red apple",
-    "الموز": "banana fruit",
-    "المانجو": "mango fruit",
-    "الفراولة": "strawberries",
-    "التمر": "dates fruit",
-    "الخيار": "cucumber vegetable",
-    "الخس": "lettuce leaves",
-    "السبانخ": "spinach leaves",
-    "الملوخية": "molokhia",
-    "الدجاج": "chicken breast",
-    "الخبز الأبيض": "white bread",
-    "المكرونة": "pasta",
-    "اللبن": "milk glass",
-    "الفول": "fava beans",
+    "الأرز": "rice grains white food",
+    "البطاطس": "potato vegetable raw",
+    "خبز القمح الكامل": "whole wheat bread loaf",
+    "الذرة": "corn cob fresh yellow",
+    "زيت الزيتون": "olive oil bottle",
+    "لحم الضأن": "lamb meat raw",
+    "لحم البقر": "beef steak raw",
+    "السمك البلطي": "fresh tilapia fish",
+    "التفاح": "red apple fruit whole",
+    "الموز": "banana fruit bunch",
+    "المانجو": "mango fruit yellow",
+    "الفراولة": "strawberries fresh",
+    "التمر": "dates fruit bunch",
+    "الخيار": "cucumber vegetable green",
+    "الخس": "lettuce leaves green",
+    "السبانخ": "spinach leaves fresh",
+    "الملوخية": "molokhia leaves",
+    "الدجاج": "chicken breast raw",
+    "الخبز الأبيض": "white sliced bread",
+    "المكرونة": "pasta uncooked",
+    "اللبن": "glass of milk",
+    "الفول": "fava beans raw",
 }
 
 def get_search_query(food_name):
     return SEARCH_QUERIES.get(food_name, f"{food_name} food")
 
-# ========== 1️⃣ SearXNG (مجاني، بدون مفتاح) ==========
+# ========== المصادر المجانية (بدون API keys) ==========
+
 def search_searxng(food_name):
+    """SearXNG - مجاني، بدون مفتاح"""
     try:
         query = get_search_query(food_name)
         url = "https://searx.tiekoetter.com/search"
@@ -68,8 +70,8 @@ def search_searxng(food_name):
         print(f"  ⚠️ SearXNG: {e}")
     return None
 
-# ========== 2️⃣ Openverse (مجاني، بدون مفتاح) ==========
 def search_openverse(food_name):
+    """Openverse - مجاني، بدون مفتاح"""
     try:
         query = get_search_query(food_name)
         url = f"https://api.openverse.engineering/v1/images/?q={query}&page_size=5"
@@ -85,8 +87,10 @@ def search_openverse(food_name):
         print(f"  ⚠️ Openverse: {e}")
     return None
 
-# ========== 3️⃣ Tavily (احتياطي، يحتاج مفتاح) ==========
+# ========== Tavily (احتياطي - يحتاج مفتاح) ==========
+
 def search_tavily(food_name):
+    """Tavily - احتياطي، يستهلك Credits"""
     if not TAVILY_API_KEY:
         return None
     try:
@@ -100,19 +104,23 @@ def search_tavily(food_name):
     return None
 
 # ========== نظام البحث الطبقي ==========
+
 def get_image_url(food_name):
     print(f"  🔍 {food_name}...", end=" ")
     
+    # 1. SearXNG (مجاني)
     url = search_searxng(food_name)
     if url:
         print("✅ SearXNG")
         return url
     
+    # 2. Openverse (مجاني)
     url = search_openverse(food_name)
     if url:
         print("✅ Openverse")
         return url
     
+    # 3. Tavily (احتياطي)
     url = search_tavily(food_name)
     if url:
         print("⚠️ Tavily (احتياطي)")
@@ -122,6 +130,7 @@ def get_image_url(food_name):
     return None
 
 def download_and_optimize(image_url, food_name):
+    """تحميل الصورة وتحويلها إلى WebP"""
     if not image_url:
         return None
     try:
@@ -134,19 +143,70 @@ def download_and_optimize(image_url, food_name):
             filename = f"{food_name}.webp"
             filepath = os.path.join(IMAGES_FOLDER, filename)
             img.save(filepath, 'webp', quality=75)
+            print(f"  ✅ تم تحميل: {filename}")
             return f"images/{filename}"
     except Exception as e:
         print(f"  ❌ فشل تحميل {food_name}: {e}")
     return None
 
-# ========== المزامنة الذكية (تضيف الصور الناقصة بس) ==========
-def sync_missing_images():
-    print("🚀 بدء البحث عن الصور الناقصة...")
+# ========== المزامنة الرئيسية ==========
+
+def sync_all_foods():
+    """يضيف جميع الأطعمة من foods.json مع صورها"""
+    print("🚀 بدء مزامنة الأطعمة مع Firebase...")
+    print("=" * 50)
+    print("ترتيب البحث: SearXNG → Openverse → Tavily (احتياطي)")
     print("=" * 50)
     
-    # جلب جميع الأطعمة من Firebase
+    # قراءة الأطعمة من foods.json
+    with open("foods.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    allowed_names = {f['name'] for f in data.get("allowed", [])}
+    forbidden_names = {f['name'] for f in data.get("forbidden", [])}
+    limited_names = {f['name'] for f in data.get("limited", [])}
+    
+    all_foods = data.get("allowed", []) + data.get("forbidden", []) + data.get("limited", [])
+    
+    for food in all_foods:
+        food_name = food['name']
+        
+        # تحديد النوع
+        if food_name in allowed_names:
+            food_type = "allowed"
+        elif food_name in forbidden_names:
+            food_type = "forbidden"
+        else:
+            food_type = "limited"
+        
+        print(f"\n📌 معالجة: {food_name} ({food_type})")
+        
+        # البحث عن صورة
+        image_url = get_image_url(food_name)
+        image_path = download_and_optimize(image_url, food_name) if image_url else PLACEHOLDER_URL
+        
+        # حفظ في Firebase
+        doc_ref = db.collection('foods').document(food_name)
+        doc_ref.set({
+            "name": food_name,
+            "type": food_type,
+            "category": food.get("category", ""),
+            "desc": food.get("desc", ""),
+            "benefits": food.get("benefits", ""),
+            "warning": food.get("warning", ""),
+            "quantity": food.get("quantity", ""),
+            "imageUrl": image_path,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "updatedAt": firestore.SERVER_TIMESTAMP
+        })
+        print(f"  ✅ تمت إضافة {food_name} إلى Firebase")
+
+def sync_missing_images():
+    """يضيف الصور فقط للأطعمة اللي مفيهاش صورة"""
+    print("🚀 بدء إضافة الصور الناقصة...")
+    print("=" * 50)
+    
     docs = db.collection('foods').get()
-    total = 0
     updated = 0
     
     for doc in docs:
@@ -154,14 +214,12 @@ def sync_missing_images():
         food_name = doc.id
         existing_image = food_data.get('imageUrl')
         
-        # لو الصورة موجودة وليست placeholder، نتخطى
+        # لو الصورة موجودة، نتخطى
         if existing_image and existing_image != PLACEHOLDER_URL and 'placeholder' not in existing_image:
             print(f"⏩ {food_name}: صورة موجودة ✓")
             continue
         
-        total += 1
         print(f"\n📸 {food_name}: ليس لديه صورة، أبحث...")
-        
         image_url = get_image_url(food_name)
         if image_url:
             image_path = download_and_optimize(image_url, food_name)
@@ -176,8 +234,13 @@ def sync_missing_images():
             print(f"  ❌ لم أجد صورة لـ {food_name}")
     
     print("\n" + "=" * 50)
-    print(f"✅ تمت معالجة {total} صنف، وتم تحديث {updated} صورة جديدة")
-    print("🎉 انتهى!")
+    print(f"✅ تم تحديث {updated} صورة جديدة")
 
 if __name__ == "__main__":
-    sync_missing_images()
+    # اختر التشغيل المطلوب:
+    
+    # 1. لو عايز تضيف كل الأطعمة من البداية (مع الصور):
+    sync_all_foods()
+    
+    # 2. لو عايز تضيف الصور الناقصة فقط (علق السطر اللي فوق وافتح اللي تحت):
+    # sync_missing_images()
