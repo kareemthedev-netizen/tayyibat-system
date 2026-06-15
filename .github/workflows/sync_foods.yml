@@ -14,9 +14,8 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install requests firebase-admin
-      - run: pip install tavily-python
       - name: تشغيل السكريبت
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: python scripts/sync_foods_to_firebase.py
