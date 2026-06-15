@@ -2,29 +2,21 @@ name: تحديث روابط الصور
 
 on:
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 jobs:
-  update-image-links:
+  update:
     runs-on: ubuntu-latest
     steps:
-      - name: تحميل الكود
-        uses: actions/checkout@v4
-      
-      - name: إعداد Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
-      - name: تثبيت المكتبات
-        run: |
-          pip install requests firebase-admin
-          pip install tavily-python
-      
-      - name: تشغيل سكريبت تحديث الروابط
+      - run: pip install requests firebase-admin
+      - run: pip install tavily-python
+      - name: تشغيل السكريبت
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-        run: |
-          python scripts/sync_foods_to_firebase.py
+        run: python scripts/sync_foods_to_firebase.py
