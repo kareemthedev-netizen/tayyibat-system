@@ -1,8 +1,8 @@
-name: تحديث روابط الصور اليومي
+name: تحديث روابط الصور
 
 on:
   schedule:
-    - cron: '0 10 * * *'   # كل يوم الساعة 10 صباحاً
+    - cron: '0 10 * * *'   # كل يوم 10 صباحاً
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,3 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           python scripts/sync_foods_to_firebase.py
-      
-      - name: عرض ملخص التحديث
-        run: |
-          echo "✅ تم الانتهاء من فحص وتحديث روابط الصور"
