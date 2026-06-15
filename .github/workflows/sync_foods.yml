@@ -1,53 +1,34 @@
-name: مزامنة الأطعمة والصور مع Firebase
+name: تحديث روابط الصور اليومي
 
 on:
-  # يتشغل تلقائياً عند تعديل الـ JSON أو السكريبت نفسه
-  push:
-    branches: [main, master]
-    paths:
-      - 'foods.json'
-      - 'scripts/sync_foods_to_firebase.py'
-  # يتشغل يدوياً من خلال زر في GitHub
+  schedule:
+    - cron: '0 10 * * *'   # كل يوم الساعة 10 صباحاً
   workflow_dispatch:
 
-# الصلاحيات المطلوبة لرفع التغييرات (الصور الجديدة) إلى GitHub
-permissions:
-  contents: write
-
 jobs:
-  sync-data-and-images:
+  update-image-links:
     runs-on: ubuntu-latest
     steps:
-      # 1. تحميل الكود من GitHub
       - name: تحميل الكود
         uses: actions/checkout@v4
-
-      # 2. إعداد بيئة Python
+      
       - name: إعداد Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      # 3. تثبيت المكتبات التي يحتاجها السكريبت
+      
       - name: تثبيت المكتبات
         run: |
-          pip install requests pillow firebase-admin
+          pip install requests firebase-admin
           pip install tavily-python
-
-      # 4. تشغيل السكريبت الأساسي
-      - name: تشغيل سكريبت المزامنة
+      
+      - name: تشغيل سكريبت تحديث الروابط
         env:
-          # المفاتيح السرية المسجلة في GitHub Secrets
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           python scripts/sync_foods_to_firebase.py
-
-      # 5. رفع الصور الجديدة إلى GitHub (إذا وُجدت)
-      - name: رفع الصور الجديدة إلى GitHub
+      
+      - name: عرض ملخص التحديث
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add images/
-          git diff --staged --quiet || git commit -m "🤖 إضافة صور جديدة [skip ci]"
-          git push
+          echo "✅ تم الانتهاء من فحص وتحديث روابط الصور"
