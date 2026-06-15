@@ -3,7 +3,6 @@ import json
 import requests
 from firebase_admin import credentials, firestore, initialize_app
 from datetime import datetime
-from urllib.parse import urlparse
 
 # ========== الإعدادات ==========
 FIREBASE_CRED = json.loads(os.environ.get("FIREBASE_SERVICE_ACCOUNT"))
@@ -18,7 +17,7 @@ db = firestore.client()
 
 PLACEHOLDER_URL = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D8%A9+%D8%BA%D9%8A%D8%B1+%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9"
 
-# ========== كلمات بحث مخصصة (صور بخلفية بيضاء وجودة عالية) ==========
+# ========== كلمات بحث مخصصة ==========
 SEARCH_QUERIES = {
     "الأرز": "rice grains white background studio lighting",
     "البطاطس": "potato isolated white background high resolution",
@@ -49,9 +48,8 @@ SEARCH_QUERIES = {
 def get_search_query(food_name):
     return SEARCH_QUERIES.get(food_name, f"{food_name} food white background isolated")
 
-# ========== فحص الرابط (شغال ولا لأ) ==========
+# ========== فحص الرابط ==========
 def check_image_url(url):
-    """تتحقق إذا كان الرابط شغالاً ويعرض صورة حقيقية"""
     if not url:
         return False
     if 'placeholder' in url or url == PLACEHOLDER_URL:
@@ -62,17 +60,11 @@ def check_image_url(url):
             content_type = response.headers.get('content-type', '')
             if 'image' in content_type:
                 return True
-        # لو الـ HEAD مش شغال، نجرب GET بس مع استهلاك جزء صغير
-        response = requests.get(url, timeout=10, stream=True)
-        if response.status_code == 200:
-            content_type = response.headers.get('content-type', '')
-            if 'image' in content_type:
-                return True
-    except Exception as e:
-        print(f"  ⚠️ فشل فحص الرابط: {e}")
+    except:
+        pass
     return False
 
-# ========== مصادر البحث المجانية ==========
+# ========== مصادر البحث ==========
 def search_searxng(food_name):
     try:
         query = get_search_query(food_name)
@@ -88,8 +80,8 @@ def search_searxng(food_name):
                         if 'white' in img_url.lower() or 'isolated' in img_url.lower():
                             return img_url
                 return data['results'][0].get('img_src')
-    except Exception as e:
-        print(f"  ⚠️ SearXNG: {e}")
+    except:
+        pass
     return None
 
 def search_openverse(food_name):
@@ -106,8 +98,8 @@ def search_openverse(food_name):
                         if 'white' in img_url.lower() or 'isolated' in img_url.lower():
                             return img_url
                 return data['results'][0].get('url')
-    except Exception as e:
-        print(f"  ⚠️ Openverse: {e}")
+    except:
+        pass
     return None
 
 def search_tavily(food_name):
@@ -119,8 +111,8 @@ def search_tavily(food_name):
         response = client.search(f"{food_name} طعام خلفية بيضاء", include_images=True, max_results=3)
         images = response.get('images', [])
         return images[0] if images else None
-    except Exception as e:
-        print(f"  ⚠️ Tavily: {e}")
+    except:
+        pass
     return None
 
 def get_image_url(food_name):
@@ -138,41 +130,37 @@ def get_image_url(food_name):
     
     url = search_tavily(food_name)
     if url:
-        print("⚠️ Tavily (احتياطي)")
+        print("⚠️ Tavily")
         return url
     
-    print("❌ مفيش صورة")
+    print("❌ مفيش")
     return None
 
 def update_broken_images_only():
-    """يحدث فقط الصور اللي رابطها غلط أو مش شغالة"""
-    print("🚀 بدء فحص وتحديث روابط الصور المعطلة...")
-    print("=" * 60)
-    print(f"📅 التاريخ: {datetime.now()}")
-    print("🔍 سأفحص كل رابط: لو شغال → أتخطى، لو بايظ → أبحث عن رابط جديد")
-    print("=" * 60)
+    print("🚀 بدء فحص وتحديث الروابط...")
+    print("=" * 50)
     
     docs = db.collection('foods').get()
+    docs_list = list(docs)
+    total = len(docs_list)
     updated = 0
     working = 0
     failed = 0
     
-    for doc in docs:
+    for doc in docs_list:
         food_data = doc.to_dict()
         food_name = doc.id
         current_image = food_data.get('imageUrl', '')
         
         print(f"\n📸 {food_name}:", end=" ")
         
-        # فحص الرابط الحالي
         if check_image_url(current_image):
-            print(f"✅ رابط شغال ✓")
+            print("✅ شغال ✓")
             working += 1
             continue
         
-        print(f"❌ رابط بايظ أو مفقود، أبحث عن رابط جديد...")
+        print("❌ بايظ، أبحث...")
         
-        # البحث عن رابط جديد
         image_url = get_image_url(food_name)
         
         if image_url:
@@ -188,15 +176,14 @@ def update_broken_images_only():
                 'updatedAt': firestore.SERVER_TIMESTAMP
             })
             failed += 1
-            print(f"  ⚠️ تم وضع صورة افتراضية لـ {food_name}")
+            print(f"  ⚠️ صورة افتراضية لـ {food_name}")
     
-    print("\n" + "=" * 60)
-    print(f"📊 التقرير النهائي:")
-    print(f"   ✅ روابط شغالة وتم تخطيها: {working}")
-    print(f"   🔄 تم تحديث روابط بايظة: {updated}")
-    print(f"   ⚠️ لم نجد صور ووضعنا افتراضية: {failed}")
-    print(f"   📋 إجمالي الأطعمة: {docs.size}")
-    print("🎉 انتهى التحديث!")
+    print("\n" + "=" * 50)
+    print(f"✅ شغال وتم تخطيه: {working}")
+    print(f"🔄 تم تحديث روابط بايظة: {updated}")
+    print(f"⚠️ صور افتراضية: {failed}")
+    print(f"📋 المجموع: {total}")
+    print("🎉 انتهى!")
 
 if __name__ == "__main__":
     update_broken_images_only()
