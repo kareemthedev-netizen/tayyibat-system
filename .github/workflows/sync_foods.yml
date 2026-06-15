@@ -2,7 +2,7 @@ name: تحديث روابط الصور
 
 on:
   schedule:
-    - cron: '0 10 * * *'   # كل يوم 10 صباحاً
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
 jobs:
