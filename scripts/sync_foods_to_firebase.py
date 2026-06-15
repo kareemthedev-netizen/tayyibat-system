@@ -1,7 +1,6 @@
 import os
 import json
 import requests
-import re
 from firebase_admin import credentials, firestore, initialize_app
 from PIL import Image
 from io import BytesIO
@@ -86,30 +85,9 @@ def search_openverse(food_name):
         print(f"  ⚠️ Openverse: {e}")
     return None
 
-# ========== 3️⃣ Imgur Scraper (مجاني، بدون مفتاح) ==========
-def search_imgur(food_name):
-    try:
-        query = get_search_query(food_name)
-        url = f"https://api.imgur.com/3/gallery/search/top/all/1?q={query}"
-        # بعض نسخ Imgur API بتقبل طلبات بدون مفتاح للقراءة العامة
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('data'):
-                for item in data['data']:
-                    if item.get('images'):
-                        for img in item['images']:
-                            img_url = img.get('link')
-                            if img_url and ('.jpg' in img_url or '.png' in img_url or '.jpeg' in img_url):
-                                return img_url
-    except Exception as e:
-        print(f"  ⚠️ Imgur: {e}")
-    return None
-
-# ========== 4️⃣ Tavily (احتياطي، يحتاج مفتاح API) ==========
+# ========== 3️⃣ Tavily (احتياطي، يحتاج مفتاح) ==========
 def search_tavily(food_name):
     if not TAVILY_API_KEY:
-        print("  ⚠️ Tavily مفتاح غير موجود")
         return None
     try:
         from tavily import TavilyClient
@@ -125,7 +103,6 @@ def search_tavily(food_name):
 def get_image_url(food_name):
     print(f"  🔍 {food_name}...", end=" ")
     
-    # المصادر المجانية (بدون مفاتيح)
     url = search_searxng(food_name)
     if url:
         print("✅ SearXNG")
@@ -136,12 +113,6 @@ def get_image_url(food_name):
         print("✅ Openverse")
         return url
     
-    url = search_imgur(food_name)
-    if url:
-        print("✅ Imgur")
-        return url
-    
-    # الحل الاحتياطي: Tavily (بمفتاح)
     url = search_tavily(food_name)
     if url:
         print("⚠️ Tavily (احتياطي)")
@@ -168,54 +139,45 @@ def download_and_optimize(image_url, food_name):
         print(f"  ❌ فشل تحميل {food_name}: {e}")
     return None
 
-def sync_food(food, food_type):
-    doc_ref = db.collection('foods').document(food['name'])
-    doc = doc_ref.get()
-    
-    if doc.exists:
-        existing = doc.to_dict()
-        if not existing.get('imageUrl'):
-            img_url = get_image_url(food['name'])
-            if img_url:
-                img_path = download_and_optimize(img_url, food['name'])
-                if img_path:
-                    doc_ref.update({'imageUrl': img_path, 'updatedAt': firestore.SERVER_TIMESTAMP})
-                    print(f"  🖼️ تحديث صورة {food['name']}")
-    else:
-        img_url = get_image_url(food['name'])
-        img_path = download_and_optimize(img_url, food['name']) if img_url else PLACEHOLDER_URL
-        doc_ref.set({
-            **food,
-            "type": food_type,
-            "imageUrl": img_path,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "updatedAt": firestore.SERVER_TIMESTAMP
-        })
-        print(f"  ✅ إضافة {food['name']}")
-
-def main():
-    print("🚀 بدء المزامنة...")
-    print("=" * 50)
-    print("ترتيب البحث: SearXNG → Openverse → Imgur → Tavily (احتياطي)")
+# ========== المزامنة الذكية (تضيف الصور الناقصة بس) ==========
+def sync_missing_images():
+    print("🚀 بدء البحث عن الصور الناقصة...")
     print("=" * 50)
     
-    with open("foods.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
+    # جلب جميع الأطعمة من Firebase
+    docs = db.collection('foods').get()
+    total = 0
+    updated = 0
     
-    allowed_names = {f['name'] for f in data.get("allowed", [])}
-    forbidden_names = {f['name'] for f in data.get("forbidden", [])}
-    limited_names = {f['name'] for f in data.get("limited", [])}
-    
-    for food in data.get("allowed", []) + data.get("forbidden", []) + data.get("limited", []):
-        if food['name'] in allowed_names:
-            sync_food(food, "allowed")
-        elif food['name'] in forbidden_names:
-            sync_food(food, "forbidden")
+    for doc in docs:
+        food_data = doc.to_dict()
+        food_name = doc.id
+        existing_image = food_data.get('imageUrl')
+        
+        # لو الصورة موجودة وليست placeholder، نتخطى
+        if existing_image and existing_image != PLACEHOLDER_URL and 'placeholder' not in existing_image:
+            print(f"⏩ {food_name}: صورة موجودة ✓")
+            continue
+        
+        total += 1
+        print(f"\n📸 {food_name}: ليس لديه صورة، أبحث...")
+        
+        image_url = get_image_url(food_name)
+        if image_url:
+            image_path = download_and_optimize(image_url, food_name)
+            if image_path:
+                doc.reference.update({
+                    'imageUrl': image_path,
+                    'updatedAt': firestore.SERVER_TIMESTAMP
+                })
+                updated += 1
+                print(f"  ✅ تمت إضافة صورة {food_name}")
         else:
-            sync_food(food, "limited")
+            print(f"  ❌ لم أجد صورة لـ {food_name}")
     
-    print("=" * 50)
-    print("🎉 انتهت المزامنة!")
+    print("\n" + "=" * 50)
+    print(f"✅ تمت معالجة {total} صنف، وتم تحديث {updated} صورة جديدة")
+    print("🎉 انتهى!")
 
 if __name__ == "__main__":
-    main()
+    sync_missing_images()
