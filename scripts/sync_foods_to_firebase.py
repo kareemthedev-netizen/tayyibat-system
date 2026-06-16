@@ -18,58 +18,80 @@ db = firestore.client()
 
 PLACEHOLDER = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D8%A9+%D8%BA%D9%8A%D8%B1+%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9"
 
-# ========== كلمات البحث ==========
+# ========== كلمات بحث محسنة ==========
 SEARCH_WORDS = {
-    "الأرز": "rice grains white background",
-    "البطاطس": "potato isolated white background",
-    "خبز القمح الكامل": "whole wheat bread isolated",
-    "الذرة": "corn cob isolated",
-    "زيت الزيتون": "olive oil bottle white background",
-    "لحم الضأن": "lamb meat cut white background",
-    "لحم البقر": "beef steak isolated",
-    "السمك البلطي": "tilapia fish white background",
-    "التفاح": "red apple isolated white background",
-    "المانجو": "mango fruit isolated",
-    "الفراولة": "strawberries isolated",
-    "التمر": "dates fruit isolated",
-    "الخيار": "cucumber isolated",
-    "الخس": "lettuce leaves isolated",
-    "السبانخ": "spinach leaves isolated",
-    "الملوخية": "molokhia leaves white background",
-    "المكرونة": "pasta isolated white background",
-    "الدجاج": "chicken breast white background",
-    "الخبز الأبيض": "white bread sliced isolated",
-    "اللبن": "glass of milk isolated",
-    "الفول": "fava beans isolated",
-    "البيض": "eggs isolated white background",
-    "الموز": "banana isolated white background",
-    "العسل": "honey jar white background",
+    "الأرز": "rice grain",
+    "البطاطس": "potato",
+    "خبز القمح الكامل": "whole wheat bread",
+    "الذرة": "corn cob",
+    "زيت الزيتون": "olive oil",
+    "لحم الضأن": "lamb meat",
+    "لحم البقر": "beef steak",
+    "السمك البلطي": "tilapia fish",
+    "التفاح": "red apple",
+    "المانجو": "mango fruit",
+    "الفراولة": "strawberry",
+    "التمر": "dates fruit",
+    "الخيار": "cucumber",
+    "الخس": "lettuce",
+    "السبانخ": "spinach",
+    "الملوخية": "molokhia",
+    "المكرونة": "pasta",
+    "الدجاج": "chicken breast",
+    "الخبز الأبيض": "white bread",
+    "اللبن": "milk",
+    "الفول": "fava beans",
+    "البيض": "egg",
+    "الموز": "banana",
+    "العسل": "honey",
+    "البيتزا": "pizza",
+    "البقلاوة": "baklava",
+    "الكنافة": "kunafa",
+    "البطيخ": "watermelon",
+    "البرتقال": "orange",
+    "اليوسفي": "tangerine",
+    "الكيوي": "kiwi",
+    "الجزر": "carrot",
+    "الطماطم": "tomato",
+    "الباذنجان": "eggplant",
+    "الكوسة": "zucchini",
+    "الفلفل الرومي": "bell pepper",
+    "البامية": "okra",
 }
 
 def search_word(food):
-    return SEARCH_WORDS.get(food, f"{food} food white background isolated")
+    return SEARCH_WORDS.get(food, food)
 
 # ========== البحث عن الصور (Pexels) ==========
 def search_pexels(food):
     if not PEXELS_KEY:
         return None
     try:
-        q = search_word(food)
-        r = requests.get(
-            "https://api.pexels.com/v1/search",
-            headers={"Authorization": PEXELS_KEY},
-            params={'query': q, 'per_page': 5},
-            timeout=15
-        )
-        if r.status_code == 200:
-            data = r.json()
-            if data.get('photos'):
-                # نفضل الصور اللي فيها خلفية بيضا
-                for photo in data['photos']:
-                    alt = photo.get('alt', '').lower()
-                    if 'white' in alt or 'isolated' in alt:
-                        return photo['src']['medium']
-                return data['photos'][0]['src']['medium']
+        base_query = search_word(food)
+        queries = [
+            base_query,
+            f"{base_query} isolated",
+            f"{base_query} white background",
+            f"{base_query} product",
+            f"{base_query} closeup",
+        ]
+        
+        for q in queries:
+            r = requests.get(
+                "https://api.pexels.com/v1/search",
+                headers={"Authorization": PEXELS_KEY},
+                params={'query': q, 'per_page': 5},
+                timeout=15
+            )
+            if r.status_code == 200:
+                data = r.json()
+                if data.get('photos'):
+                    # نفضل الصور اللي فيها خلفية بيضا
+                    for photo in data['photos']:
+                        alt = photo.get('alt', '').lower()
+                        if 'white' in alt or 'isolated' in alt or 'product' in alt:
+                            return photo['src']['medium']
+                    return data['photos'][0]['src']['medium']
     except Exception as e:
         print(f"  ⚠️ Pexels فشل: {e}")
     return None
