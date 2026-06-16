@@ -15,9 +15,7 @@ jobs:
           python-version: '3.11'
       - name: تثبيت المكتبات
         run: |
-          pip install requests firebase-admin pillow rembg backgroundremover
-          pip install google-images-download
-          pip install selenium webdriver-manager
+          pip install requests firebase-admin
       - name: تشغيل السكريبت
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
