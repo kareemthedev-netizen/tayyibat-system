@@ -13,7 +13,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install requests firebase-admin
+      - name: تثبيت المكتبات
+        run: |
+          pip install requests firebase-admin pillow rembg backgroundremover
+          pip install google-images-download
+          pip install selenium webdriver-manager
       - name: تشغيل السكريبت
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
