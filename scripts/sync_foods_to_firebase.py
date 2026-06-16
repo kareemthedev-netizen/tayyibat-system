@@ -18,6 +18,7 @@ db = firestore.client()
 
 PLACEHOLDER = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D8%A9+%D8%BA%D9%8A%D8%B1+%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9"
 
+# ========== كلمات البحث ==========
 SEARCH_WORDS = {
     "الأرز": "rice grains white background",
     "البطاطس": "potato isolated white",
@@ -179,12 +180,47 @@ def get_image(food):
     print("❌ مفيش")
     return None
 
+# ========== السكريبت الشامل ==========
 def sync():
     print("=" * 60)
-    print("🚀 تحديث الصور (7 مجانية + Pexels)")
+    print("🚀 المزامنة الشاملة: إضافة الأطعمة + تحديث الصور")
     print(f"📅 {datetime.now()}")
     print("=" * 60)
     
+    # الخطوة 1: إضافة الأطعمة من foods.json (لو مش موجودة)
+    print("\n📥 الخطوة 1: التحقق من الأطعمة في Firebase...")
+    with open("foods.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    all_foods = data.get("allowed", []) + data.get("forbidden", []) + data.get("limited", [])
+    
+    # جلب الأطعمة الموجودة في Firebase
+    existing_docs = db.collection('foods').stream()
+    existing_names = {doc.id for doc in existing_docs}
+    
+    added = 0
+    for food in all_foods:
+        name = food['name']
+        if name not in existing_names:
+            db.collection('foods').document(name).set({
+                "name": name,
+                "type": food.get("type", "allowed"),
+                "category": food.get("category", ""),
+                "desc": food.get("desc", ""),
+                "benefits": food.get("benefits", ""),
+                "warning": food.get("warning", ""),
+                "quantity": food.get("quantity", ""),
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            })
+            print(f"  ✅ إضافة: {name}")
+            added += 1
+        else:
+            print(f"  ⏩ {name}: موجود بالفعل")
+    
+    print(f"📊 تم إضافة {added} صنف جديد")
+    
+    # الخطوة 2: تحديث الصور للأكلات اللي مفيهاش صور
+    print("\n🖼️ الخطوة 2: تحديث الصور الناقصة...")
     docs = db.collection('foods').stream()
     updated = 0
     total = 0
@@ -196,22 +232,33 @@ def sync():
         current = data.get('imageUrl', '')
         
         if current and current != PLACEHOLDER:
-            print(f"⏩ {food_name}: موجودة")
+            print(f"⏩ {food_name}: صورة موجودة ✓")
             continue
         
-        print(f"\n📸 {food_name}: أبحث...")
+        print(f"\n📸 {food_name}: أبحث عن صورة...")
         img = get_image(food_name)
         
         if img:
-            doc.reference.update({'imageUrl': img, 'updatedAt': firestore.SERVER_TIMESTAMP})
+            doc.reference.update({
+                'imageUrl': img,
+                'updatedAt': firestore.SERVER_TIMESTAMP
+            })
             updated += 1
+            print(f"  ✅ تم تحديث {food_name}")
         else:
-            doc.reference.update({'imageUrl': PLACEHOLDER, 'updatedAt': firestore.SERVER_TIMESTAMP})
+            doc.reference.update({
+                'imageUrl': PLACEHOLDER,
+                'updatedAt': firestore.SERVER_TIMESTAMP
+            })
+            print(f"  ⚠️ صورة افتراضية لـ {food_name}")
         
         time.sleep(0.5)
     
     print("\n" + "=" * 60)
-    print(f"✅ تم تحديث {updated} من {total}")
+    print(f"📊 التقرير النهائي:")
+    print(f"   ✅ أضيف جديد: {added}")
+    print(f"   🖼️ تم تحديث صور: {updated}")
+    print(f"   📋 إجمالي الأطعمة في Firebase: {total}")
     print("🎉 انتهى!")
 
 if __name__ == "__main__":
