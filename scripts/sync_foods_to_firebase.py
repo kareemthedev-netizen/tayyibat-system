@@ -18,33 +18,94 @@ db = firestore.client()
 
 PLACEHOLDER = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D8%A9+%D8%BA%D9%8A%D8%B1+%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9"
 
-# ========== كلمات البحث ==========
+# ========== كلمات بحث دقيقة لكل صنف ==========
 SEARCH_WORDS = {
-    "الأرز": "rice grains white background",
-    "البطاطس": "potato isolated white",
-    "خبز القمح الكامل": "whole wheat bread isolated",
-    "الذرة": "corn cob isolated",
-    "زيت الزيتون": "olive oil bottle white",
-    "لحم الضأن": "lamb meat white",
-    "لحم البقر": "beef steak isolated",
-    "السمك البلطي": "tilapia fish white",
-    "التفاح": "red apple isolated",
-    "الموز": "banana isolated",
-    "المانجو": "mango fruit isolated",
-    "الفراولة": "strawberries isolated",
-    "التمر": "dates fruit isolated",
-    "الخيار": "cucumber isolated",
-    "الخس": "lettuce leaves isolated",
-    "السبانخ": "spinach leaves isolated",
-    "الملوخية": "molokhia leaves",
-    "المكرونة": "pasta isolated white",
-    "الدجاج": "chicken breast white",
-    "الخبز الأبيض": "white bread isolated",
-    "اللبن": "milk glass isolated",
+    "الأرز": "rice grains white background closeup",
+    "الأرز البني": "brown rice grains white background",
+    "البطاطس": "potato isolated white background",
+    "البطاطا الحلوة": "sweet potato isolated white background",
+    "خبز القمح الكامل": "whole wheat bread isolated white background",
+    "خبز الشعير": "barley bread isolated white background",
+    "الذرة": "corn cob isolated white background",
+    "الفريك": "freekeh grain white background",
+    "البرغل": "bulgur wheat white background",
+    "الشوفان": "oats oatmeal white background",
+    "زيت الزيتون": "olive oil bottle white background",
+    "السمن البلدي": "ghee white background",
+    "الزبد البلدي": "butter isolated white background",
+    "لحم الضأن": "lamb meat cut white background",
+    "لحم البقر": "beef steak isolated white background",
+    "لحم الأرنب": "rabbit meat white background",
+    "الكوارع": "beef trotters white background",
+    "السمك البلطي": "tilapia fish white background",
+    "السمك البوري": "mullet fish white background",
+    "الجمبري": "shrimp isolated white background",
+    "التفاح": "red apple isolated white background",
+    "المانجو": "mango fruit isolated white background",
+    "الرمان": "pomegranate isolated white background",
+    "الفراولة": "strawberries isolated white background",
+    "التمر": "dates fruit isolated white background",
+    "التين": "fig fruit isolated white background",
+    "الجوافة": "guava isolated white background",
+    "الخيار": "cucumber isolated white background",
+    "الخس": "lettuce leaves isolated white background",
+    "الجرجير": "arugula leaves white background",
+    "البقدونس": "parsley leaves white background",
+    "السبانخ": "spinach leaves isolated white background",
+    "الملوخية": "molokhia leaves white background",
+    "الكوسة": "zucchini isolated white background",
+    "الباذنجان": "eggplant isolated white background",
+    "الفلفل الرومي": "bell pepper isolated white background",
+    "البامية": "okra isolated white background",
+    "المكرونة": "pasta isolated white background",
+    "الدجاج": "raw chicken breast white background",
+    "الخبز الأبيض": "white bread isolated white background",
+    "اللبن": "milk glass isolated white background",
+    "الزبادي": "yogurt isolated white background",
+    "الفول": "fava beans isolated white background",
+    "العدس": "lentils isolated white background",
+    "الحمص": "chickpeas isolated white background",
+    "البيض": "eggs isolated white background",
+    "السكر الأبيض": "sugar white background",
+    "الطماطم": "tomato isolated white background",
+    "الجزر": "carrot isolated white background",
+    "البرتقال": "orange isolated white background",
+    "اليوسفي": "tangerine isolated white background",
+    "الكيوي": "kiwi isolated white background",
+    "البطيخ": "watermelon isolated white background",
+    "الموز": "banana isolated white background",
+    "العسل": "honey jar white background",
+    "الشوكولاتة الداكنة": "dark chocolate bar white background",
 }
 
 def search_word(food):
     return SEARCH_WORDS.get(food, f"{food} food white background isolated")
+
+# ========== فحص الصورة (تتأكد إنها صورة مش ذبابة) ==========
+def check_image_quality(url):
+    """تتأكد إن الصورة مش بايظة أو فيها حشرات"""
+    if not url:
+        return False
+    if 'placeholder' in url or url == PLACEHOLDER:
+        return False
+    
+    # كلمات ممنوعة في الصورة (زي ذبابة، حشرات)
+    bad_words = ['fly', 'insect', 'bug', 'rotten', 'mold', 'dust', 'dirty', 'fake']
+    url_lower = url.lower()
+    for word in bad_words:
+        if word in url_lower:
+            print(f"  ⚠️ الصورة فيها {word}، هتتجاهلها")
+            return False
+    
+    try:
+        response = requests.head(url, timeout=10, allow_redirects=True)
+        if response.status_code == 200:
+            content_type = response.headers.get('content-type', '')
+            if 'image' in content_type:
+                return True
+    except:
+        pass
+    return False
 
 # ========== 7 أدوات مجانية ==========
 def search_searxng(food):
@@ -54,7 +115,10 @@ def search_searxng(food):
                          params={'q': q, 'categories': 'images', 'format': 'json'},
                          timeout=10)
         if r.status_code == 200 and r.json().get('results'):
-            return r.json()['results'][0].get('img_src')
+            for result in r.json()['results']:
+                img_url = result.get('img_src')
+                if img_url and check_image_quality(img_url):
+                    return img_url
     except:
         pass
     return None
@@ -66,7 +130,10 @@ def search_openverse(food):
                          params={'q': q, 'page_size': 5},
                          timeout=10)
         if r.status_code == 200 and r.json().get('results'):
-            return r.json()['results'][0].get('url')
+            for result in r.json()['results']:
+                img_url = result.get('url')
+                if img_url and check_image_quality(img_url):
+                    return img_url
     except:
         pass
     return None
@@ -78,7 +145,9 @@ def search_duckduckgo(food):
                          params={'q': q, 'format': 'json', 'no_html': 1},
                          timeout=10)
         if r.status_code == 200 and r.json().get('Image'):
-            return r.json()['Image']
+            img_url = r.json()['Image']
+            if check_image_quality(img_url):
+                return img_url
     except:
         pass
     return None
@@ -92,7 +161,9 @@ def search_bing(food):
         if r.status_code == 200:
             match = re.search(r'murl":"([^"]+)"', r.text)
             if match:
-                return match.group(1)
+                img_url = match.group(1)
+                if check_image_quality(img_url):
+                    return img_url
     except:
         pass
     return None
@@ -105,8 +176,9 @@ def search_yandex(food):
                          timeout=10)
         if r.status_code == 200:
             images = re.findall(r'https?://[^"\']+\.(jpg|jpeg|png|webp)', r.text)
-            if images:
-                return images[0]
+            for img_url in images:
+                if check_image_quality(img_url):
+                    return img_url
     except:
         pass
     return None
@@ -119,8 +191,10 @@ def search_baidu(food):
                          timeout=10)
         if r.status_code == 200:
             images = re.findall(r'"objURL":"([^"]+)"', r.text)
-            if images:
-                return images[0].replace('\\', '')
+            for img_url in images:
+                img_url = img_url.replace('\\', '')
+                if check_image_quality(img_url):
+                    return img_url
     except:
         pass
     return None
@@ -133,8 +207,10 @@ def search_360(food):
                          timeout=10)
         if r.status_code == 200:
             images = re.findall(r'"img":"([^"]+)"', r.text)
-            if images:
-                return images[0].replace('\\/', '/')
+            for img_url in images:
+                img_url = img_url.replace('\\/', '/')
+                if check_image_quality(img_url):
+                    return img_url
     except:
         pass
     return None
@@ -147,10 +223,13 @@ def search_pexels(food):
         q = search_word(food)
         r = requests.get("https://api.pexels.com/v1/search",
                          headers={"Authorization": PEXELS_KEY},
-                         params={'query': q, 'per_page': 1},
+                         params={'query': q, 'per_page': 3},
                          timeout=10)
         if r.status_code == 200 and r.json().get('photos'):
-            return r.json()['photos'][0]['src']['medium']
+            for photo in r.json()['photos']:
+                img_url = photo['src']['medium']
+                if check_image_quality(img_url):
+                    return img_url
     except:
         pass
     return None
@@ -194,7 +273,6 @@ def sync():
     
     all_foods = data.get("allowed", []) + data.get("forbidden", []) + data.get("limited", [])
     
-    # جلب الأطعمة الموجودة في Firebase
     existing_docs = db.collection('foods').stream()
     existing_names = {doc.id for doc in existing_docs}
     
@@ -219,11 +297,12 @@ def sync():
     
     print(f"📊 تم إضافة {added} صنف جديد")
     
-    # الخطوة 2: تحديث الصور للأكلات اللي مفيهاش صور
-    print("\n🖼️ الخطوة 2: تحديث الصور الناقصة...")
+    # الخطوة 2: تحديث الصور (للأكلات اللي مفيهاش صور أو صورها غلط)
+    print("\n🖼️ الخطوة 2: فحص وتحديث الصور...")
     docs = db.collection('foods').stream()
     updated = 0
     total = 0
+    fixed = 0
     
     for doc in docs:
         total += 1
@@ -231,11 +310,18 @@ def sync():
         data = doc.to_dict()
         current = data.get('imageUrl', '')
         
+        # فحص الصورة الحالية (لو موجودة وصحيحة)
         if current and current != PLACEHOLDER:
-            print(f"⏩ {food_name}: صورة موجودة ✓")
-            continue
+            if check_image_quality(current):
+                print(f"⏩ {food_name}: صورة صحيحة ✓")
+                continue
+            else:
+                print(f"\n📸 {food_name}: صورة بايظة (هتتغير)")
+                fixed += 1
+        else:
+            print(f"\n📸 {food_name}: مفيش صورة")
         
-        print(f"\n📸 {food_name}: أبحث عن صورة...")
+        # البحث عن صورة جديدة
         img = get_image(food_name)
         
         if img:
@@ -257,7 +343,8 @@ def sync():
     print("\n" + "=" * 60)
     print(f"📊 التقرير النهائي:")
     print(f"   ✅ أضيف جديد: {added}")
-    print(f"   🖼️ تم تحديث صور: {updated}")
+    print(f"   🖼️ تم تحديث/إصلاح صور: {updated}")
+    print(f"   🔧 صور بايظة تم إصلاحها: {fixed}")
     print(f"   📋 إجمالي الأطعمة في Firebase: {total}")
     print("🎉 انتهى!")
 
