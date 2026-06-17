@@ -1,22 +1,18 @@
-name: ضغط الصور في Firebase
+name: تحديث البيانات في Firebase
 
 on:
-  schedule:
-    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 jobs:
-  compress:
+  seed:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: تثبيت المكتبات
-        run: |
-          pip install requests firebase-admin
-      - name: تشغيل سكريبت ضغط الصور
+      - run: pip install firebase-admin
+      - name: تشغيل سكريبت الإضافة
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: python scripts/compress_images.py
+        run: python scripts/seed_foods_to_firebase.py
