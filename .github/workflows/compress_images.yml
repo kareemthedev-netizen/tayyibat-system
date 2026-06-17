@@ -1,4 +1,4 @@
-name: تحديث روابط الصور
+name: ضغط الصور في Firebase
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  update:
+  compress:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,8 +16,7 @@ jobs:
       - name: تثبيت المكتبات
         run: |
           pip install requests firebase-admin
-      - name: تشغيل السكريبت
+      - name: تشغيل سكريبت ضغط الصور
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-        run: python scripts/sync_foods_to_firebase.py
+        run: python scripts/compress_images.py
