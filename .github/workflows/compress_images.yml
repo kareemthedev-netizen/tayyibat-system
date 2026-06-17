@@ -1,10 +1,10 @@
-name: تحديث البيانات في Firebase
+name: إضافة حقل الصور الفارغ
 
 on:
   workflow_dispatch:
 
 jobs:
-  seed:
+  add-field:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install firebase-admin
-      - name: تشغيل سكريبت الإضافة
+      - name: إضافة الحقل الفارغ
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: python scripts/seed_foods_to_firebase.py
+        run: python scripts/add_empty_image_field.py
