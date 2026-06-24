@@ -1,1 +1,0 @@
-# tayyibat-system
