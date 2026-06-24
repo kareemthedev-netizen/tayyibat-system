@@ -1,18 +1,22 @@
-name: إضافة حقل الصور الفارغ
+name: ضغط الصور في Firebase
 
 on:
+  schedule:
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 jobs:
-  add-field:
+  compress:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install firebase-admin
-      - name: إضافة الحقل الفارغ
+      - name: تثبيت المكتبات
+        run: |
+          pip install requests firebase-admin
+      - name: تشغيل سكريبت ضغط الصور
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: python scripts/add_empty_image_field.py
+        run: python scripts/compress_images.py
