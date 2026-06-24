@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import time  # <-- ده السطر اللي ناقص
 from firebase_admin import credentials, firestore, initialize_app
 from datetime import datetime
 from urllib.parse import quote
@@ -17,27 +18,23 @@ db = firestore.client()
 PLACEHOLDER = "https://via.placeholder.com/300x200?text=%D8%B5%D9%88%D8%B1%D8%A9+%D8%BA%D9%8A%D8%B1+%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9"
 
 def compress_image_url(image_url):
-    """تضغط الصورة بإضافة معاملات للرابط"""
     if not image_url:
         return None
     if image_url == PLACEHOLDER:
         return image_url
     
-    # Pexels
     if 'pexels.com' in image_url:
         if '?' in image_url:
             return image_url + '&auto=compress&cs=tinysrgb&w=300&h=200&fit=crop'
         else:
             return image_url + '?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop'
     
-    # Unsplash
     if 'unsplash.com' in image_url or 'images.unsplash.com' in image_url:
         if '?' in image_url:
             return image_url + '&w=300&h=200&fit=crop'
         else:
             return image_url + '?w=300&h=200&fit=crop'
     
-    # أي رابط تاني - weserv.nl
     return f"https://images.weserv.nl/?url={quote(image_url)}&w=300&h=200&fit=cover&q=80"
 
 def compress_all_images():
