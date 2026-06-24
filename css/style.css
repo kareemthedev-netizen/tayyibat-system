@@ -9,28 +9,7 @@ body {
     background: linear-gradient(135deg, #0a2e1c 0%, #1a472a 50%, #0d2818 100%);
     min-height: 100vh;
     color: #f5e6d3;
-}
-
-.theme-toggle {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-    border: 1px solid #ffd700;
-    border-radius: 50px;
-    padding: 10px 15px;
-    cursor: pointer;
-    color: #f5e6d3;
-    font-size: 0.9rem;
-    transition: all 0.3s;
-}
-
-.theme-toggle:hover {
-    background: #ffd700;
-    color: #1a472a;
-    transform: scale(1.05);
+    transition: background 0.3s;
 }
 
 body.night-mode {
@@ -38,6 +17,31 @@ body.night-mode {
     color: #c5d5e6;
 }
 
+/* زر الليل والنهار ثابت */
+.theme-toggle {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid #ffd700 !important;
+    border-radius: 50% !important;
+    width: 45px !important;
+    height: 45px !important;
+    font-size: 1.2rem !important;
+    cursor: pointer !important;
+    color: #f5e6d3 !important;
+    transition: all 0.3s !important;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    background: #ffd700 !important;
+    color: #1a472a !important;
+}
+
+/* ========== الصفحة الرئيسية ========== */
 .hero {
     min-height: 100vh;
     display: flex;
@@ -155,6 +159,7 @@ body.night-mode {
     100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
 }
 
+/* ========== مودال تسجيل الدخول ========== */
 .modal {
     display: none;
     position: fixed;
@@ -263,6 +268,7 @@ body.night-mode {
     text-decoration: none;
 }
 
+/* ========== لوحة التحكم ========== */
 .dashboard-container {
     max-width: 1200px;
     margin: 40px auto;
@@ -323,6 +329,7 @@ body.night-mode {
 
 .d-card h3 { margin-bottom: 10px; }
 
+/* ========== باقي الصفحات ========== */
 .diagnosis-container, .plan-container, .weekly-container, .legal-container, .about-container, .quran-container, .foods-container, .exercises-container {
     max-width: 1000px;
     margin: 40px auto;
@@ -337,77 +344,7 @@ body.night-mode {
     margin-bottom: 30px;
 }
 
-.quran-section {
-    margin-bottom: 40px;
-}
-
-.section-title {
-    color: #ffd700;
-    font-size: 1.8rem;
-    text-align: center;
-    margin-bottom: 30px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #ffd700;
-    display: inline-block;
-    width: 100%;
-}
-
-.verses-grid, .hadiths-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 25px;
-}
-
-.verse-card, .hadith-card {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    padding: 25px;
-    transition: all 0.3s;
-    border-right: 4px solid #ffd700;
-}
-
-.verse-card:hover, .hadith-card:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.verse-arabic {
-    font-size: 1.5rem;
-    font-family: 'Amiri', 'Traditional Arabic', serif;
-    text-align: center;
-    margin-bottom: 15px;
-    color: #ffd700;
-}
-
-.verse-translation {
-    text-align: center;
-    font-size: 0.9rem;
-    color: #c5b89a;
-    margin-bottom: 15px;
-}
-
-.verse-explanation, .hadith-explanation {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    line-height: 1.6;
-}
-
-.hadith-text {
-    font-size: 1.2rem;
-    text-align: center;
-    margin-bottom: 10px;
-    font-style: italic;
-}
-
-.hadith-source {
-    text-align: center;
-    font-size: 0.8rem;
-    color: #ffd700;
-    margin-bottom: 15px;
-}
-
+/* شاشة البداية للتشخيص */
 .start-screen {
     text-align: center;
     padding: 60px 20px;
@@ -430,6 +367,7 @@ body.night-mode {
 
 .start-btn:hover { transform: scale(1.05); }
 
+/* أسئلة التشخيص */
 .progress-bar {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 10px;
@@ -464,7 +402,7 @@ body.night-mode {
 
 .options-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 15px;
 }
 
@@ -499,6 +437,7 @@ body.night-mode {
     font-weight: bold;
 }
 
+/* ========== صفحة الأطعمة ========== */
 .foods-search {
     display: flex;
     justify-content: center;
@@ -553,7 +492,9 @@ body.night-mode {
 .food-type.limited { background: #ff9800; color: white; }
 
 .food-card-body { padding: 15px; font-size: 0.85rem; }
+.food-card-image img { width: 100%; height: 150px; object-fit: cover; }
 
+/* ========== صفحة التمارين ========== */
 .exercise-form {
     background: rgba(255, 255, 255, 0.08);
     padding: 25px;
@@ -569,7 +510,6 @@ body.night-mode {
 }
 
 .form-group label { display: block; margin-bottom: 8px; color: #ffd700; }
-
 .form-group select {
     width: 100%;
     padding: 12px;
@@ -604,6 +544,7 @@ body.night-mode {
 .exercise-item ul { list-style: none; }
 .exercise-item li { padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 
+/* ========== صفحة الخطة العلاجية ========== */
 .result-box {
     background: rgba(255, 215, 0, 0.15);
     padding: 20px;
@@ -628,6 +569,8 @@ body.night-mode {
 
 .food-category.allowed { border-right: 4px solid #4caf50; }
 .food-category.forbidden { border-right: 4px solid #f44336; }
+.food-category ul { list-style: none; }
+.food-category li { padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 
 .meal-table {
     display: grid;
@@ -654,6 +597,14 @@ body.night-mode {
 .rules-card ul { list-style: none; margin-top: 15px; }
 .rules-card li { padding: 8px 0; }
 
+.exercise-card {
+    background: linear-gradient(135deg, #2d6a4f, #1b4332);
+    padding: 20px;
+    border-radius: 20px;
+    margin: 20px 0;
+}
+
+/* ========== صفحة الاختبار الأسبوعي ========== */
 .week-badge {
     background: #ffd700;
     color: #1a472a;
@@ -706,18 +657,7 @@ body.night-mode {
     margin-top: 20px;
 }
 
-.profile-card, .legal-section {
-    background: rgba(255, 255, 255, 0.08);
-    padding: 25px;
-    border-radius: 20px;
-    margin-bottom: 25px;
-}
-
-.legal-section.warning {
-    background: rgba(244, 67, 54, 0.2);
-    border-right: 4px solid #f44336;
-}
-
+/* ========== الفوتر ========== */
 footer {
     background: #0a1f12;
     padding: 20px 40px 15px;
@@ -790,11 +730,13 @@ footer {
     font-size: 0.6rem;
 }
 
+/* ========== متجاوب ========== */
 @media (max-width: 768px) {
     .glow-text { font-size: 2rem; }
     .typewriter { font-size: 1.2rem; white-space: normal; border-left: none; animation: none; }
     .dashboard-cards { grid-template-columns: 1fr; }
     .footer-grid { grid-template-columns: repeat(2, 1fr); }
     .options-grid { grid-template-columns: 1fr; }
-    .verses-grid, .hadiths-grid { grid-template-columns: 1fr; }
+    .foods-grid { grid-template-columns: 1fr; }
+    .meal-table { grid-template-columns: 1fr; }
 }
