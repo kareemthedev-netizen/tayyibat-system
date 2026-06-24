@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التمارين | نظام الطيبات</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+<body>
+
+<div class="exercises-container">
+    <div class="foods-header">
+        <h1>🏃 تمارينك العلاجية</h1>
+        <p>اختر حالتك واحصل على خطة تمارين مخصصة</p>
+    </div>
+    
+    <div class="exercise-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label>🎯 اختر حالتك الصحية</label>
+                <select id="conditionSelect">
+                    <option value="general">عامة - روتين صحي</option>
+                    <option value="joints">آلام المفاصل</option>
+                    <option value="digestion">اضطرابات هضمية</option>
+                    <option value="fatigue">إرهاق عام</option>
+                    <option value="back">آلام الظهر</option>
+                    <option value="sleep">مشاكل النوم</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>⚡ مستوى لياقتك</label>
+                <select id="levelSelect">
+                    <option value="beginner">مبتدئ</option>
+                    <option value="intermediate">متوسط</option>
+                    <option value="advanced">متقدم</option>
+                </select>
+            </div>
+        </div>
+        <button id="generateExercises" class="submit-btn">🎯 احصل على تمارين مخصصة</button>
+    </div>
+    
+    <div id="exerciseSuggestions" class="exercise-suggestion">
+        <h3>📋 اختر حالتك أعلاه لظهور التمارين المناسبة</h3>
+    </div>
+    
+    <div id="exerciseList" class="exercise-list"></div>
+</div>
+
+<footer>
+    <div class="footer-container">
+        <div class="footer-grid">
+            <div class="footer-col"><h4>روابط سريعة</h4><ul><li><a href="legal.html">⚖️ الإفصاح القانوني</a></li><li><a href="privacy.html">🔒 سياسة الخصوصية</a></li><li><a href="terms.html">📜 شروط الاستخدام</a></li><li><a href="about-site.html">🌟 عن الموقع</a></li></ul></div>
+            <div class="footer-col"><h4>عن الموقع</h4><p>منصة توعوية لنشر منهج "نظام الطيبات" للدكتور ضياء العوضي.</p></div>
+            <div class="footer-col"><h4>مؤسس الموقع</h4><p>كريم عاطف<br>مواليد 5 سبتمبر 2007</p></div>
+            <div class="footer-col"><h4>تابعنا</h4><div class="social-icons"><a href="https://www.youtube.com/@MrBits-8" target="_blank" class="social-icon youtube"><i class="fab fa-youtube"></i> يوتيوب</a><a href="https://www.facebook.com/share/1BGqkqvAhZ/" target="_blank" class="social-icon facebook"><i class="fab fa-facebook-f"></i> فيسبوك</a><a href="https://whatsapp.com/channel/0029Vb7vA9EHgZWYc8Y56a1w" target="_blank" class="social-icon whatsapp"><i class="fab fa-whatsapp"></i> واتساب</a><a href="https://www.tiktok.com/@mr.bits.8" target="_blank" class="social-icon tiktok"><i class="fab fa-tiktok"></i> تيك توك</a></div></div>
+            <div class="footer-col"><h4>إحصائيات</h4><div class="stats-box"><p>👥 المستخدمين: <strong id="userCount">0</strong></p><p>📋 خطط: <strong>2,500+</strong></p><p>📝 اختبارات: <strong>8,000+</strong></p></div></div>
+        </div>
+        <div class="footer-bottom"><p>© 2025 - جميع الحقوق محفوظة لـ كريم عاطف | نظام الطيبات للأغراض التوعوية والبحثية</p></div>
+    </div>
+</footer>
+
+<script type="module" src="js/firebase-config.js"></script>
+<script type="module" src="js/auth.js"></script>
+<script type="module">
+    const exercisesDatabase = {
+        joints: {
+            name: "🦵 تمارين لتقوية المفاصل",
+            beginner: [
+                "🚶 مشي خفيف 10 دقائق يومياً",
+                "🧘 تمارين إطالة خفيفة للركبتين",
+                "💺 الجلوس والوقوف من الكرسي 5 مرات"
+            ],
+            intermediate: [
+                "🚶 مشي سريع 20 دقيقة",
+                "🏊 سباحة أو تمارين مائية",
+                "🦵 تمارين رفع الرجلين"
+            ],
+            advanced: [
+                "🏃 مشي سريع 30 دقيقة",
+                "🚴 ركوب دراجة ثابتة",
+                "🏋️ تمارين مقاومة خفيفة"
+            ]
+        },
+        digestion: {
+            name: "🍽️ تمارين لتحسين الهضم",
+            beginner: [
+                "🚶 مشي خفيف بعد الأكل بـ 10 دقائق",
+                "🌬️ تنفس عميق (شهيق 4 ثوانٍ - زفير 6)",
+                "🧘 جلوس القرفصاء لمدة 5 دقائق"
+            ],
+            intermediate: [
+                "🧘 تمارين يوجا لهضم أفضل",
+                "🚶 مشي 15 دقيقة بعد الوجبات",
+                "🌬️ تمارين تنفس بطيء"
+            ],
+            advanced: [
+                "🧘 تمارين هاثا يوجا",
+                "🚶 مشي 20 دقيقة",
+                "🌬️ تمارين براناياما"
+            ]
+        },
+        fatigue: {
+            name: "⚡ تمارين لرفع الطاقة",
+            beginner: [
+                "🚶 مشي تدريجي - ابدأ بـ 5 دقائق",
+                "🧘 تمارين تمدد الصباح",
+                "🌬️ تنفس عميق 5 مرات"
+            ],
+            intermediate: [
+                "🚶 مشي 15 دقيقة يومياً",
+                "🏋️ تمارين مقاومة خفيفة",
+                "🧘 تمارين يوجا سريعة"
+            ],
+            advanced: [
+                "🏃 مشي سريع 25 دقيقة",
+                "🏋️ تمارين قوة متوسطة",
+                "🧘 تمارين كارديو خفيفة"
+            ]
+        },
+        back: {
+            name: "🔙 تمارين لآلام الظهر",
+            beginner: [
+                "🧘 وضعية الطفل (Child's pose)",
+                "🐱 وضعية القطة والجمل",
+                "🛌 تمارين إطالة أسفل الظهر"
+            ],
+            intermediate: [
+                "🧘 تمارين كوبر لأسفل الظهر",
+                "🏋️ تمارين تقوية البطن",
+                "🚶 مشي 15 دقيقة"
+            ],
+            advanced: [
+                "🧘 تمارين بيلاتس للظهر",
+                "🏋️ تمارين سوبرمان",
+                "🏊 سباحة"
+            ]
+        },
+        sleep: {
+            name: "😴 تمارين للنوم العميق",
+            beginner: [
+                "🌬️ تنفس 4-7-8 (شهيق 4 - حبس 7 - زفير 8)",
+                "🛌 مسح الجسم (Body scan)",
+                "🧘 استرخاء عضلي تدريجي"
+            ],
+            intermediate: [
+                "🧘 يوجا نيدرا",
+                "🌬️ تأمل 10 دقائق",
+                "🛌 تمارين استرخاء قبل النوم"
+            ],
+            advanced: [
+                "🧘 يوجا كاملة قبل النوم",
+                "🌬️ تأمل موجه",
+                "📝 كتابة اليوميات"
+            ]
+        },
+        general: {
+            name: "🌟 روتين صحي عام",
+            beginner: [
+                "🚶 مشي 10 دقائق يومياً",
+                "🧘 تمارين إطالة خفيفة",
+                "🌬️ تنفس عميق 3 مرات"
+            ],
+            intermediate: [
+                "🚶 مشي 20 دقيقة يومياً",
+                "🏋️ تمارين منزلية 15 دقيقة",
+                "🧘 تمارين توازن"
+            ],
+            advanced: [
+                "🏃 مشي سريع 30 دقيقة",
+                "🏋️ تمارين قوة متكاملة",
+                "🧘 يوجا 20 دقيقة"
+            ]
+        }
+    };
+    
+    document.getElementById('generateExercises').addEventListener('click', () => {
+        const condition = document.getElementById('conditionSelect').value;
+        const level = document.getElementById('levelSelect').value;
+        
+        const exercises = exercisesDatabase[condition];
+        
+        const suggestionDiv = document.getElementById('exerciseSuggestions');
+        suggestionDiv.innerHTML = `
+            <h3>✨ ${exercises.name}</h3>
+            <p>المستوى: ${level === 'beginner' ? 'مبتدئ' : level === 'intermediate' ? 'متوسط' : 'متقدم'}</p>
+            <p>⏱️ المدة الموصى بها: 20-30 دقيقة يومياً</p>
+        `;
+        
+        const listDiv = document.getElementById('exerciseList');
+        listDiv.innerHTML = `
+            <div class="exercise-item">
+                <h4><i class="fas fa-check-circle"></i> الأسبوع الأول</h4>
+                <ul>${exercises[level].map(ex => `<li>${ex}</li>`).join('')}</ul>
+            </div>
+            <div class="exercise-item">
+                <h4><i class="fas fa-calendar-week"></i> الأسبوع الثاني</h4>
+                <ul>${exercises[level].map(ex => `<li>${ex.replace('دقائق', 'دقيقة').replace('مرات', 'مرة')} + زيادة 5 دقائق</li>`).join('')}</ul>
+            </div>
+            <div class="exercise-item">
+                <h4><i class="fas fa-chart-line"></i> الأسبوع الثالث والرابع</h4>
+                <ul>${exercises[level].map(ex => `<li>${ex} (تطوير مستمر)</li>`).join('')}</ul>
+            </div>
+        `;
+    });
+    
+    // تشغيل تلقائي لأول حالة
+    document.getElementById('generateExercises').click();
+</script>
+</body>
+</html>

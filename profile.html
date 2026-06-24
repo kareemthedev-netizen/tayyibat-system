@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملفي الشخصي | نظام الطيبات</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<div class="profile-container" style="max-width: 1100px; margin: 40px auto; padding: 30px; background: rgba(0,0,0,0.5); border-radius: 30px;">
+    <!-- الهيدر -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <h1 style="color: #ffd700;">👤 ملفي الشخصي</h1>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="index.html" class="outline-btn" style="padding: 8px 20px; text-decoration: none;">🏠 الرئيسية</a>
+            <button id="addConditionBtn" class="neon-btn" style="padding: 8px 20px; font-size: 0.9rem;">➕ حالة جديدة</button>
+        </div>
+    </div>
+
+    <!-- الحالة الحالية -->
+    <div style="margin-top: 20px; background: rgba(255,215,0,0.1); padding: 15px; border-radius: 15px; border-right: 4px solid #ffd700;">
+        <h3 style="color: #ffd700;">📌 الحالة الحالية</h3>
+        <div id="currentCondition">
+            <p style="color: #c5b89a;">لم تختار حالة بعد</p>
+        </div>
+    </div>
+
+    <!-- كل الحالات -->
+    <div style="margin-top: 30px;">
+        <h3 style="color: #ffd700;">📋 كل حالاتي</h3>
+        <div id="conditionsList">
+            <p style="color: #c5b89a;">جاري التحميل...</p>
+        </div>
+    </div>
+
+    <!-- تفاصيل الحالة المختارة -->
+    <div id="conditionDetails" style="display: none; margin-top: 30px; background: rgba(0,0,0,0.3); padding: 25px; border-radius: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #ffd700; padding-bottom: 15px; margin-bottom: 20px;">
+            <h3 style="color: #ffd700;">📊 تفاصيل الحالة</h3>
+            <button id="closeDetailsBtn" class="outline-btn" style="padding: 5px 15px;">✖ إغلاق</button>
+        </div>
+        <div id="detailsContent"></div>
+    </div>
+
+    <!-- نموذج إضافة حالة -->
+    <div id="addConditionForm" style="display: none; margin-top: 30px; background: rgba(0,0,0,0.3); padding: 25px; border-radius: 20px;">
+        <h3 style="color: #ffd700;">📝 إضافة حالة جديدة</h3>
+        <form id="newConditionForm">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="color: #f5e6d3;">اختر المرض أو الأعراض:</label>
+                <select id="conditionSelect" style="width: 100%; padding: 12px; border-radius: 25px; background: rgba(0,0,0,0.5); border: 1px solid #ffd700; color: #f5e6d3;">
+                    <option value="diabetes">السكري</option>
+                    <option value="pressure">ضغط الدم المرتفع</option>
+                    <option value="cholesterol">ارتفاع الكوليسترول</option>
+                    <option value="heart">أمراض القلب</option>
+                    <option value="joints">آلام المفاصل</option>
+                    <option value="digestion">اضطرابات هضمية</option>
+                    <option value="kidney">حصوات الكلى</option>
+                    <option value="thyroid">الغدة الدرقية</option>
+                    <option value="anemia">فقر الدم (الأنيميا)</option>
+                    <option value="gout">النقرس</option>
+                    <option value="psoriasis">الصدفية</option>
+                    <option value="asthma">الربو</option>
+                    <option value="allergy">حساسية الطعام</option>
+                    <option value="other">أخرى (اكتبها في الملاحظات)</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="color: #f5e6d3;">ملاحظات إضافية:</label>
+                <textarea id="conditionNotes" rows="3" style="width: 100%; padding: 12px; border-radius: 25px; background: rgba(0,0,0,0.5); border: 1px solid #ffd700; color: #f5e6d3; resize: vertical;"></textarea>
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button type="submit" class="submit-btn">💾 حفظ الحالة</button>
+                <button type="button" id="cancelAddBtn" class="outline-btn" style="padding: 12px 25px;">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const conditionsList = document.getElementById('conditionsList');
+        const currentConditionDiv = document.getElementById('currentCondition');
+        const conditionDetails = document.getElementById('conditionDetails');
+        const detailsContent = document.getElementById('detailsContent');
+        const closeDetailsBtn = document.getElementById('closeDetailsBtn');
+        const addBtn = document.getElementById('addConditionBtn');
+        const addForm = document.getElementById('addConditionForm');
+        const cancelBtn = document.getElementById('cancelAddBtn');
+        const form = document.getElementById('newConditionForm');
+        const conditionSelect = document.getElementById('conditionSelect');
+        const conditionNotes = document.getElementById('conditionNotes');
+
+        let allConditions = [];
+        let currentConditionId = localStorage.getItem('currentConditionId') || null;
+        let allWeeklyTests = [];
+
+        // جلب الاختبارات الأسبوعية لكل الحالات
+        async function loadAllWeeklyTests(userId) {
+            try {
+                const snapshot = await db.collection('weekly_tests')
+                    .where('userId', '==', userId)
+                    .get();
+                allWeeklyTests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error('خطأ في جلب الاختبارات:', error);
+            }
+        }
+
+        // جلب تفاصيل حالة معينة
+        async function loadConditionDetails(conditionId) {
+            try {
+                const doc = await db.collection('userConditions').doc(conditionId).get();
+                if (!doc.exists) return null;
+                const data = doc.data();
+                
+                // جلب الاختبارات الأسبوعية الخاصة بهذه الحالة
+                const tests = allWeeklyTests.filter(t => t.conditionId === conditionId);
+                const sortedTests = tests.sort((a, b) => (a.weekNumber || 0) - (b.weekNumber || 0));
+                
+                return { ...data, id: conditionId, weeklyTests: sortedTests };
+            } catch (error) {
+                console.error('خطأ:', error);
+                return null;
+            }
+        }
+
+        // عرض تفاصيل الحالة
+        async function showDetails(conditionId) {
+            const details = await loadConditionDetails(conditionId);
+            if (!details) {
+                alert('❌ حدث خطأ في تحميل التفاصيل');
+                return;
+            }
+
+            conditionDetails.style.display = 'block';
+
+            let weeklyTestsHtml = '';
+            if (details.weeklyTests && details.weeklyTests.length > 0) {
+                weeklyTestsHtml = `
+                    <h4 style="color: #ffd700; margin-top: 20px;">📝 الاختبارات الأسبوعية</h4>
+                    ${details.weeklyTests.map((test, index) => `
+                        <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+                                <strong>الأسبوع ${test.weekNumber || index + 1}</strong>
+                                <small style="color: #8a7a60;">${test.submittedAt ? new Date(test.submittedAt.seconds * 1000).toLocaleDateString('ar-EG') : 'تاريخ غير معروف'}</small>
+                            </div>
+                            ${test.answers ? `
+                                <div style="font-size: 0.85rem; color: #c5b89a; margin-top: 5px;">
+                                    ${Object.entries(test.answers).map(([key, val]) => `
+                                        <span style="display: inline-block; margin-left: 10px;">
+                                            <strong>${getQuestionName(key)}:</strong> ${getAnswerName(key, val)}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            ${test.notes ? `<p style="font-size: 0.8rem; color: #a8e6cf; margin-top: 5px;">📌 ${test.notes}</p>` : ''}
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                weeklyTestsHtml = `<p style="color: #c5b89a;">📌 لا توجد اختبارات أسبوعية لهذه الحالة بعد</p>`;
+            }
+
+            // عرض الأطعمة الموصى بها
+            let foodsHtml = '';
+            if (details.recommendedFoods && details.recommendedFoods.length > 0) {
+                foodsHtml = `
+                    <h4 style="color: #ffd700; margin-top: 20px;">🥗 الأطعمة الموصى بها</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${details.recommendedFoods.slice(0, 30).map(food => `
+                            <span style="background: rgba(76,175,80,0.2); padding: 5px 12px; border-radius: 20px; border: 1px solid #4caf50; font-size: 0.85rem;">${food}</span>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // عرض إجابات التشخيص
+            let answersHtml = '';
+            if (details.answers) {
+                answersHtml = `
+                    <h4 style="color: #ffd700; margin-top: 20px;">📋 إجابات التشخيص</h4>
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px;">
+                        ${Object.entries(details.answers).map(([key, val]) => `
+                            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <span style="color: #c5b89a;">${getQuestionName(key)}</span>
+                                <span style="color: #f5e6d3;">${getAnswerName(key, val)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            detailsContent.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <p><strong style="color: #ffd700;">🏷️ الحالة:</strong> <span style="color: #f5e6d3;">${getConditionName(details.condition)}</span></p>
+                        <p><strong style="color: #ffd700;">📅 تاريخ التشخيص:</strong> <span style="color: #f5e6d3;">${details.createdAt ? new Date(details.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : 'غير معروف'}</span></p>
+                        <p><strong style="color: #ffd700;">📝 ملاحظات:</strong> <span style="color: #f5e6d3;">${details.notes || 'لا توجد'}</span></p>
+                        <p><strong style="color: #ffd700;">📊 الحالة:</strong> <span style="color: ${details.status === 'active' ? '#4caf50' : '#ff9800'};">${details.status === 'active' ? 'نشط' : 'مكتمل'}</span></p>
+                    </div>
+                    <div>
+                        ${foodsHtml}
+                    </div>
+                </div>
+                ${answersHtml}
+                <div style="margin-top: 20px;">
+                    ${weeklyTestsHtml}
+                </div>
+            `;
+
+            // تمرير للتفاصيل
+            conditionDetails.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // أسماء الأسئلة
+        function getQuestionName(key) {
+            const names = {
+                'chronic': 'مرض مزمن',
+                'sugar': 'استهلاك السكر',
+                'salt': 'استهلاك الملح',
+                'joints': 'آلام المفاصل',
+                'digestion': 'مشاكل الهضم',
+                'energy': 'مستوى الطاقة',
+                'sleep': 'جودة النوم',
+                'symptoms': 'أعراض إضافية'
+            };
+            return names[key] || key;
+        }
+
+        // أسماء الإجابات
+        function getAnswerName(key, value) {
+            const answers = {
+                'chronic': {
+                    'diabetes': 'السكري',
+                    'pressure': 'ضغط الدم',
+                    'cholesterol': 'الكوليسترول',
+                    'heart': 'أمراض القلب',
+                    'joints': 'آلام المفاصل',
+                    'digestion': 'اضطرابات هضمية',
+                    'kidney': 'حصوات الكلى',
+                    'thyroid': 'الغدة الدرقية',
+                    'anemia': 'فقر الدم',
+                    'gout': 'النقرس',
+                    'psoriasis': 'الصدفية',
+                    'asthma': 'الربو',
+                    'allergy': 'حساسية الطعام',
+                    'none': 'لا أعاني'
+                },
+                'sugar': {
+                    'high': 'كثير',
+                    'medium': 'متوسط',
+                    'low': 'قليل',
+                    'zero': 'لا أستهلك'
+                },
+                'salt': {
+                    'high': 'كثير',
+                    'medium': 'متوسط',
+                    'low': 'قليل',
+                    'zero': 'لا أضيف'
+                },
+                'joints': {
+                    'rheumatoid': 'الروماتويد',
+                    'osteo': 'خشونة المفاصل',
+                    'gout': 'النقرس',
+                    'none': 'لا أعاني'
+                },
+                'digestion': {
+                    'ibd': 'التهابات الأمعاء',
+                    'gerd': 'ارتجاع المريء',
+                    'constipation': 'إمساك مزمن',
+                    'bloating': 'انتفاخات',
+                    'none': 'لا أعاني'
+                },
+                'energy': {
+                    'very-low': 'منخفض جداً',
+                    'low': 'منخفض',
+                    'medium': 'متوسط',
+                    'high': 'مرتفع'
+                },
+                'sleep': {
+                    'poor': 'سيئة',
+                    'fair': 'مقبولة',
+                    'good': 'جيدة',
+                    'excellent': 'ممتازة'
+                },
+                'symptoms': {
+                    'headache': 'صداع مزمن',
+                    'skin': 'مشاكل جلدية',
+                    'anxiety': 'قلق واكتئاب',
+                    'hair': 'تساقط شعر',
+                    'allergy': 'حساسية',
+                    'none': 'لا أعاني'
+                }
+            };
+            return answers[key]?.[value] || value || 'غير محدد';
+        }
+
+        function getConditionName(value) {
+            const names = {
+                'diabetes': 'السكري',
+                'pressure': 'ضغط الدم المرتفع',
+                'cholesterol': 'ارتفاع الكوليسترول',
+                'heart': 'أمراض القلب',
+                'joints': 'آلام المفاصل',
+                'digestion': 'اضطرابات هضمية',
+                'kidney': 'حصوات الكلى',
+                'thyroid': 'الغدة الدرقية',
+                'anemia': 'فقر الدم (الأنيميا)',
+                'gout': 'النقرس',
+                'psoriasis': 'الصدفية',
+                'asthma': 'الربو',
+                'allergy': 'حساسية الطعام',
+                'other': 'أخرى'
+            };
+            return names[value] || value;
+        }
+
+        // جلب كل الحالات
+        async function loadConditions() {
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // جلب الاختبارات الأسبوعية
+                await loadAllWeeklyTests(user.uid);
+
+                const snapshot = await db.collection('userConditions')
+                    .where('userId', '==', user.uid)
+                    .get();
+
+                const docs = snapshot.docs;
+                docs.sort((a, b) => {
+                    const dateA = a.data().createdAt?.seconds || 0;
+                    const dateB = b.data().createdAt?.seconds || 0;
+                    return dateB - dateA;
+                });
+
+                allConditions = docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (allConditions.length === 0) {
+                    conditionsList.innerHTML = '<p style="color: #c5b89a;">📌 لا توجد حالات مسجلة.</p>';
+                    currentConditionDiv.innerHTML = '<p style="color: #c5b89a;">⚠️ لم تختار حالة بعد</p>';
+                    return;
+                }
+
+                conditionsList.innerHTML = allConditions.map((cond, index) => `
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-right: 4px solid ${cond.id === currentConditionId ? '#ffd700' : '#555'};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                            <div>
+                                <strong style="color: ${cond.id === currentConditionId ? '#ffd700' : '#f5e6d3'};">${index + 1}. ${getConditionName(cond.condition)}</strong>
+                                <p style="font-size: 0.85rem; color: #c5b89a; margin-top: 5px;">${cond.notes || 'لا توجد ملاحظات'}</p>
+                                <small style="color: #8a7a60;">${cond.createdAt ? new Date(cond.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : 'تاريخ غير معروف'}</small>
+                                <span style="font-size: 0.7rem; color: ${cond.status === 'active' ? '#4caf50' : '#ff9800'}; margin-right: 10px;">${cond.status === 'active' ? '● نشط' : '● مكتمل'}</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button onclick="viewDetails('${cond.id}')" style="background: rgba(255,215,0,0.2); border: 1px solid #ffd700; padding: 5px 12px; border-radius: 20px; color: #f5e6d3; cursor: pointer; font-size: 0.75rem;">
+                                    📊 تفاصيل
+                                </button>
+                                <button onclick="selectCondition('${cond.id}')" style="background: ${cond.id === currentConditionId ? '#ffd700' : 'rgba(255,255,255,0.1)'}; border: 1px solid #ffd700; padding: 5px 12px; border-radius: 20px; color: ${cond.id === currentConditionId ? '#1a472a' : '#f5e6d3'}; cursor: pointer; font-size: 0.75rem;">
+                                    ${cond.id === currentConditionId ? '✅ نشط' : '🎯 اختيار'}
+                                </button>
+                                <button onclick="viewPlan('${cond.id}')" style="background: rgba(76,175,80,0.2); border: 1px solid #4caf50; padding: 5px 12px; border-radius: 20px; color: #f5e6d3; cursor: pointer; font-size: 0.75rem;">
+                                    📋 الخطة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // عرض الحالة الحالية
+                if (currentConditionId) {
+                    const current = allConditions.find(c => c.id === currentConditionId);
+                    if (current) {
+                        currentConditionDiv.innerHTML = `
+                            <p><strong style="color: #ffd700;">${getConditionName(current.condition)}</strong></p>
+                            <p style="font-size: 0.9rem; color: #c5b89a;">${current.notes || 'لا توجد ملاحظات'}</p>
+                            <small style="color: #8a7a60;">منذ ${current.createdAt ? new Date(current.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : 'تاريخ غير معروف'}</small>
+                        `;
+                    }
+                }
+
+            } catch (error) {
+                console.error('خطأ:', error);
+                conditionsList.innerHTML = `<p style="color: #ff6b6b;">❌ حدث خطأ: ${error.message}</p>`;
+            }
+        }
+
+        // اختيار حالة
+        window.selectCondition = function(conditionId) {
+            localStorage.setItem('currentConditionId', conditionId);
+            currentConditionId = conditionId;
+            loadConditions();
+            alert('✅ تم اختيار الحالة بنجاح!');
+        };
+
+        // عرض تفاصيل الحالة
+        window.viewDetails = function(conditionId) {
+            showDetails(conditionId);
+        };
+
+        // عرض خطة حالة معينة
+        window.viewPlan = function(conditionId) {
+            localStorage.setItem('viewConditionId', conditionId);
+            window.location.href = 'plan.html';
+        };
+
+        // إغلاق التفاصيل
+        closeDetailsBtn.onclick = () => {
+            conditionDetails.style.display = 'none';
+        };
+
+        // إضافة حالة جديدة
+        addBtn.onclick = () => {
+            addForm.style.display = 'block';
+            addBtn.style.display = 'none';
+        };
+
+        cancelBtn.onclick = () => {
+            addForm.style.display = 'none';
+            addBtn.style.display = 'inline-block';
+            form.reset();
+        };
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const user = auth.currentUser;
+            if (!user) {
+                alert('الرجاء تسجيل الدخول');
+                return;
+            }
+
+            const condition = conditionSelect.value;
+            const notes = conditionNotes.value.trim();
+
+            if (condition === 'other' && !notes) {
+                alert('الرجاء كتابة اسم الحالة في الملاحظات');
+                return;
+            }
+
+            try {
+                const docRef = await db.collection('userConditions').add({
+                    userId: user.uid,
+                    condition: condition,
+                    notes: notes || '',
+                    status: 'active',
+                    createdAt: new Date(),
+                    fromDiagnosis: false,
+                    answers: {},
+                    recommendedFoods: []
+                });
+
+                localStorage.setItem('currentConditionId', docRef.id);
+                currentConditionId = docRef.id;
+
+                alert('✅ تم إضافة الحالة بنجاح!');
+                addForm.style.display = 'none';
+                addBtn.style.display = 'inline-block';
+                form.reset();
+                loadConditions();
+
+            } catch (error) {
+                alert('❌ حدث خطأ: ' + error.message);
+            }
+        });
+
+        // مراقبة المستخدم
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            } else {
+                loadConditions();
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

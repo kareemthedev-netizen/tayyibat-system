@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خطتك العلاجية | نظام الطيبات</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<div class="plan-container">
+    <h1>🌿 خطتك العلاجية حسب حالتك 🌿</h1>
+
+    <div id="diagnosisResult" class="result-box">
+        <h2>📍 حالتك: <span id="userCondition">جاري التحميل...</span></h2>
+        <p id="conditionDesc"></p>
+        <div id="recommendationsList"></div>
+    </div>
+
+    <div class="diet-plan">
+        <h2>🍽️ نظام الطيبات - المسموحات</h2>
+        <div class="food-grid">
+            <div class="food-category allowed">
+                <h3>✅ النشويات المسموحة</h3>
+                <ul>
+                    <li>🍚 الأرز (يفضل الأرز البني)</li>
+                    <li>🥔 البطاطس (مسلوقة أو مشوية)</li>
+                    <li>🍞 خبز القمح الكامل</li>
+                    <li>🌽 الذرة الطازجة</li>
+                </ul>
+            </div>
+            <div class="food-category allowed">
+                <h3>✅ الدهون المسموحة</h3>
+                <ul>
+                    <li>🫒 زيت الزيتون البكر</li>
+                    <li>🧈 الزبد البلدي (بكميات قليلة)</li>
+                    <li>🥩 السمن البلدي</li>
+                </ul>
+            </div>
+            <div class="food-category allowed">
+                <h3>✅ اللحوم المسموحة</h3>
+                <ul>
+                    <li>🐑 لحم الضأن</li>
+                    <li>🐇 لحم الأرنب</li>
+                    <li>🐄 لحم بقري أحمر</li>
+                    <li>🐟 الأسماك (جميع الأنواع)</li>
+                </ul>
+            </div>
+            <div class="food-category allowed">
+                <h3>✅ الفواكه المسموحة</h3>
+                <ul>
+                    <li>🍎 تفاح</li>
+                    <li>🥭 مانجو</li>
+                    <li>🍓 فراولة</li>
+                    <li>🍇 رمان</li>
+                    <li>🌴 تمر (3-5 حبات)</li>
+                </ul>
+            </div>
+            <div class="food-category forbidden">
+                <h3>❌ الممنوعات (تجنبها تماماً)</h3>
+                <ul>
+                    <li>🍞 خبز أبيض، مكرونة، بيتزا</li>
+                    <li>🥛 لبن، زبادي، جبن أبيض</li>
+                    <li>🐔 دجاج، بط، أوز</li>
+                    <li>🫘 فول، عدس، حمص، فاصوليا</li>
+                    <li>🍉 بطيخ، برتقال، يوسفي، كيوي</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="meal-plan">
+        <h2>📅 جدول وجبات أسبوعي مقترح</h2>
+        <div class="meal-table">
+            <div class="meal-day"><h3>الاثنين</h3><p>🍽️ الفطور: تمر + زبدة بلدي</p><p>🍽️ الغداء: أرز + لحم ضأن</p><p>🍽️ العشاء: بطاطس مسلوقة</p></div>
+            <div class="meal-day"><h3>الثلاثاء</h3><p>🍽️ الفطور: تفاح</p><p>🍽️ الغداء: سمك مشوي + أرز</p><p>🍽️ العشاء: شوربة عظام</p></div>
+            <div class="meal-day"><h3>الأربعاء</h3><p>🍽️ الفطور: تمر + زيت زيتون</p><p>🍽️ الغداء: كفتة لحم + بطاطس</p><p>🍽️ العشاء: فواكه مشكلة</p></div>
+            <div class="meal-day"><h3>الخميس</h3><p>🍽️ الفطور: موز (نصف)</p><p>🍽️ الغداء: أرز + لحم أرنب</p><p>🍽️ العشاء: بطاطس مهروسة</p></div>
+            <div class="meal-day"><h3>الجمعة</h3><p>🍽️ الفطور: مانجو</p><p>🍽️ الغداء: سمك مشوي + أرز</p><p>🍽️ العشاء: فواكه</p></div>
+            <div class="meal-day"><h3>السبت</h3><p>🍽️ الفطور: فراولة</p><p>🍽️ الغداء: لحم بقري + بطاطس</p><p>🍽️ العشاء: شوربة عظام</p></div>
+            <div class="meal-day"><h3>الأحد (يوم صيام)</h3><p>🍽️ الإفطار: ماء دافئ + 3 تمرات</p><p>🍽️ الغداء: شوربة عظام فقط</p><p>🍽️ العشاء: عصير تفاح طبيعي</p></div>
+        </div>
+    </div>
+
+    <div class="exercise-plan">
+        <h2>🏃 تمارين علاجية حسب حالتك</h2>
+        <div id="exerciseForCondition"></div>
+    </div>
+
+    <div class="rules-card">
+        <h3>📋 القواعد الذهبية لنظام الطيبات</h3>
+        <ul>
+            <li>🍽️ لا تأكل إلا عند الجوع الحقيقي</li>
+            <li>✋ توقف عن الأكل قبل الشبع</li>
+            <li>📅 صيام يومي الاثنين والخميس + 13،14،15 من كل شهر عربي</li>
+            <li>🫙 تناول خل طبيعي يومياً</li>
+            <li>💧 اشرب ماء دافئ على الريق</li>
+            <li>🧂 قلل الملح واستخدم الأعشاب</li>
+            <li>🍯 استخدم العسل أو التمر كبديل للسكر</li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+        <a href="weekly-test.html" class="neon-btn" style="display: inline-block; text-decoration: none;">📝 سجل اختبارك الأسبوعي</a>
+        <a href="foods-database.html" class="outline-btn" style="display: inline-block; text-decoration: none;">🥗 استكشف الأطعمة</a>
+        <a href="exercises.html" class="outline-btn" style="display: inline-block; text-decoration: none;">🏃 خطة التمارين</a>
+        <a href="profile.html" class="outline-btn" style="display: inline-block; text-decoration: none;">👤 ملفي الشخصي</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const exerciseDatabase = {
+            "السكري": {
+                name: "🍽️ نظام غذائي لمرضى السكري",
+                exercises: ["🚶 مشي 30 دقيقة يومياً", "🧘 تمارين تنفس عميق", "🏋️ تمارين مقاومة خفيفة"],
+                duration: "30 دقيقة يومياً"
+            },
+            "ضغط الدم": {
+                name: "🫀 نظام لخفض ضغط الدم",
+                exercises: ["🚶 مشي 20 دقيقة يومياً", "🧘 تمارين استرخاء", "🌬️ تمارين تنفس بطيء"],
+                duration: "25 دقيقة يومياً"
+            },
+            "آلام المفاصل": {
+                name: "🏃 تمارين تقوية المفاصل",
+                exercises: ["🚶 مشي خفيف 20-30 دقيقة يومياً", "🧘 تمارين إطالة للركبتين والوركين (15 دقيقة)", "💺 الجلوس والوقوف من الكرسي 10 مرات"],
+                duration: "25 دقيقة يومياً"
+            },
+            "اضطرابات هضمية": {
+                name: "🧘 تمارين للهضم",
+                exercises: ["🚶 مشي خفيف بعد الأكل بـ 10 دقائق", "🌬️ تمارين التنفس العميق", "🧘 وضعية القرفصاء"],
+                duration: "15 دقيقة بعد كل وجبة"
+            },
+            "إرهاق عام": {
+                name: "⚡ تمارين لرفع الطاقة",
+                exercises: ["🚶 مشي تدريجي - ابدأ بـ 10 دقائق", "🏋️ تمارين مقاومة خفيفة", "🧘 تمارين تمدد الصباح"],
+                duration: "20-30 دقيقة يومياً"
+            },
+            "فقر الدم": {
+                name: "🩸 تمارين لتحسين الدورة الدموية",
+                exercises: ["🚶 مشي 20 دقيقة يومياً", "🧘 تمارين تنفس عميق", "🏋️ تمارين خفيفة بالأوزان"],
+                duration: "25 دقيقة يومياً"
+            },
+            "النقرس": {
+                name: "🦶 تمارين لتخفيف النقرس",
+                exercises: ["🚶 مشي خفيف 15 دقيقة", "🧘 تمارين إطالة القدمين", "💧 شرب ماء وتمارين تنفس"],
+                duration: "20 دقيقة يومياً"
+            },
+            "حصوات الكلى": {
+                name: "💧 تمارين للحفاظ على صحة الكلى",
+                exercises: ["🚶 مشي 20 دقيقة يومياً", "🧘 تمارين استرخاء", "💧 شرب ماء بانتظام"],
+                duration: "25 دقيقة يومياً"
+            },
+            "الغدة الدرقية": {
+                name: "🦋 تمارين لدعم الغدة الدرقية",
+                exercises: ["🧘 تمارين يوجا خفيفة", "🚶 مشي 20 دقيقة", "🌬️ تمارين تنفس عميق"],
+                duration: "25 دقيقة يومياً"
+            },
+            "الصدفية": {
+                name: "🧴 تمارين لتخفيف التوتر والالتهابات",
+                exercises: ["🧘 تمارين استرخاء", "🚶 مشي 15 دقيقة", "🌬️ تمارين تنفس عميق"],
+                duration: "20 دقيقة يومياً"
+            },
+            "الربو": {
+                name: "🌬️ تمارين تنفس لمرضى الربو",
+                exercises: ["🌬️ تمارين تنفس بطيء", "🧘 استرخاء عضلي", "🚶 مشي 10 دقائق"],
+                duration: "15 دقيقة يومياً"
+            },
+            "حساسية الطعام": {
+                name: "🍽️ نظام غذائي للحساسية",
+                exercises: ["🧘 تمارين استرخاء", "🚶 مشي 15 دقيقة", "🌬️ تنفس عميق"],
+                duration: "20 دقيقة يومياً"
+            },
+            "عامة": {
+                name: "🚶 روتين صحي عام",
+                exercises: ["🚶 مشي 30 دقيقة يومياً", "🧘 تمارين إطالة بسيطة", "🏃 صعود ونزول السلالم"],
+                duration: "35 دقيقة يومياً"
+            }
+        };
+
+        function displayExercises(condition) {
+            const exercises = exerciseDatabase[condition] || exerciseDatabase["عامة"];
+            const div = document.getElementById('exerciseForCondition');
+            div.innerHTML = `
+                <div class="exercise-card">
+                    <h3>${exercises.name}</h3>
+                    <ul>${exercises.exercises.map(ex => `<li>✓ ${ex}</li>`).join('')}</ul>
+                    <p class="duration">⏱️ المدة الموصى بها: ${exercises.duration}</p>
+                </div>
+            `;
+        }
+
+        // مراقبة حالة المستخدم
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                // جلب الحالة من localStorage أو من viewConditionId
+                let conditionId = localStorage.getItem('viewConditionId') || localStorage.getItem('currentConditionId');
+                let condition = "عامة";
+
+                if (conditionId) {
+                    const doc = await db.collection('userConditions').doc(conditionId).get();
+                    if (doc.exists) {
+                        condition = doc.data().condition || "عامة";
+                    }
+                } else {
+                    // لو مفيش حالة محددة، نجيب من diagnoses
+                    const doc = await db.collection('diagnoses').doc(user.uid).get();
+                    if (doc.exists) {
+                        condition = doc.data().condition || "عامة";
+                    } else {
+                        condition = localStorage.getItem('userCondition') || "عامة";
+                    }
+                }
+
+                document.getElementById('userCondition').textContent = condition;
+                displayExercises(condition);
+
+                const desc = {
+                    "السكري": "نظامك يركز على تنظيم السكر في الدم وتجنب الأطعمة عالية السكر",
+                    "ضغط الدم": "نظامك يركز على خفض ضغط الدم وتقليل الملح",
+                    "آلام المفاصل": "نظامك يركز على تقليل الالتهابات وتقوية المفاصل",
+                    "اضطرابات هضمية": "نظامك يركز على تحسين الهضم وتقليل الانتفاخات",
+                    "إرهاق عام": "نظامك يركز على رفع الطاقة وتحسين النوم",
+                    "فقر الدم": "نظامك يركز على زيادة الحديد وتحسين الدورة الدموية",
+                    "النقرس": "نظامك يركز على تقليل حمض البوليك وتجنب اللحوم الحمراء",
+                    "حصوات الكلى": "نظامك يركز على زيادة السوائل وتقليل الأكسالات",
+                    "الغدة الدرقية": "نظامك يركز على دعم وظائف الغدة الدرقية",
+                    "الصدفية": "نظامك يركز على تقليل الالتهابات وتحسين المناعة",
+                    "الربو": "نظامك يركز على تقوية الجهاز التنفسي وتقليل الالتهابات",
+                    "حساسية الطعام": "نظامك يركز على تجنب مسببات الحساسية",
+                    "عامة": "نظامك متوازن للحفاظ على الصحة العامة"
+                };
+                document.getElementById('conditionDesc').textContent = desc[condition] || desc["عامة"];
+
+            } catch (error) {
+                console.error('خطأ في تحميل التشخيص:', error);
+                document.getElementById('userCondition').textContent = 'خطأ في التحميل';
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

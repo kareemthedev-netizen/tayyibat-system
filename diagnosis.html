@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التشخيص | نظام الطيبات</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<div class="diagnosis-container">
+    <div id="startScreen" class="start-screen">
+        <h2>🌿 مرحباً بك في رحلة التشخيص 🌿</h2>
+        <p>"من عرف مرضه فقد بدأ العلاج" - الدكتور ضياء العوضي</p>
+        <p>هنا سنساعدك على فهم جسمك بشكل أفضل من خلال مجموعة من الأسئلة المتخصصة</p>
+        <button id="startDiagnosisBtn" class="start-btn">✨ أنا جاهز ✨</button>
+    </div>
+
+    <div id="questionsContainer" style="display: none;">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        <form id="diagnosisForm">
+            
+            <!-- سؤال 1 -->
+            <div id="q1" class="question-screen active">
+                <div class="question-card">
+                    <h3>📋 هل تعاني من أي من هذه الأمراض المزمنة؟</h3>
+                    <div class="options-grid" data-question="chronic">
+                        <div class="option-btn" data-value="diabetes">السكري</div>
+                        <div class="option-btn" data-value="pressure">ضغط الدم المرتفع</div>
+                        <div class="option-btn" data-value="cholesterol">ارتفاع الكوليسترول</div>
+                        <div class="option-btn" data-value="heart">أمراض القلب</div>
+                        <div class="option-btn" data-value="joints">آلام المفاصل</div>
+                        <div class="option-btn" data-value="digestion">اضطرابات هضمية</div>
+                        <div class="option-btn" data-value="kidney">حصوات الكلى</div>
+                        <div class="option-btn" data-value="thyroid">الغدة الدرقية</div>
+                        <div class="option-btn" data-value="anemia">فقر الدم (الأنيميا)</div>
+                        <div class="option-btn" data-value="gout">النقرس</div>
+                        <div class="option-btn" data-value="psoriasis">الصدفية</div>
+                        <div class="option-btn" data-value="asthma">الربو</div>
+                        <div class="option-btn" data-value="allergy">حساسية الطعام</div>
+                        <div class="option-btn" data-value="none">لا أعاني من أي مرض</div>
+                    </div>
+                </div>
+                <div class="nav-buttons"><button type="button" class="nav-btn next-btn" data-next="2">التالي →</button></div>
+            </div>
+
+            <!-- سؤال 2 -->
+            <div id="q2" class="question-screen">
+                <div class="question-card">
+                    <h3>🍬 ما هو معدل استهلاكك اليومي للسكر؟</h3>
+                    <div class="options-grid" data-question="sugar">
+                        <div class="option-btn" data-value="high">كثير (أكثر من 10 ملاعق)</div>
+                        <div class="option-btn" data-value="medium">متوسط (5-10 ملاعق)</div>
+                        <div class="option-btn" data-value="low">قليل (أقل من 5 ملاعق)</div>
+                        <div class="option-btn" data-value="zero">لا أستهلك سكر مضاف</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn prev-btn" data-prev="1">← السابق</button>
+                    <button type="button" class="nav-btn next-btn" data-next="3">التالي →</button>
+                </div>
+            </div>
+
+            <!-- سؤال 3 -->
+            <div id="q3" class="question-screen">
+                <div class="question-card">
+                    <h3>🧂 ما هو معدل استهلاكك اليومي للملح؟</h3>
+                    <div class="options-grid" data-question="salt">
+                        <div class="option-btn" data-value="high">كثير</div>
+                        <div class="option-btn" data-value="medium">متوسط</div>
+                        <div class="option-btn" data-value="low">قليل</div>
+                        <div class="option-btn" data-value="zero">لا أضيف ملح</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn prev-btn" data-prev="2">← السابق</button>
+                    <button type="button" class="nav-btn next-btn" data-next="4">التالي →</button>
+                </div>
+            </div>
+
+            <!-- سؤال 4 -->
+            <div id="q4" class="question-screen">
+                <div class="question-card">
+                    <h3>🦴 هل تعاني من آلام في المفاصل؟</h3>
+                    <div class="options-grid" data-question="joints">
+                        <div class="option-btn" data-value="rheumatoid">الروماتويد</div>
+                        <div class="option-btn" data-value="osteo">خشونة المفاصل</div>
+                        <div class="option-btn" data-value="gout">النقرس</div>
+                        <div class="option-btn" data-value="none">لا أعاني</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn prev-btn" data-prev="3">← السابق</button>
+                    <button type="button" class="nav-btn next-btn" data-next="5">التالي →</button>
+                </div>
+            </div>
+
+            <!-- سؤال 5 -->
+            <div id="q5" class="question-screen">
+                <div class="question-card">
+                    <h3>🍽️ هل تعاني من مشاكل في الجهاز الهضمي؟</h3>
+                    <div class="options-grid" data-question="digestion">
+                        <div class="option-btn" data-value="ibd">التهابات الأمعاء</div>
+                        <div class="option-btn" data-value="gerd">ارتجاع المريء</div>
+                        <div class="option-btn" data-value="constipation">إمساك مزمن</div>
+                        <div class="option-btn" data-value="bloating">انتفاخات</div>
+                        <div class="option-btn" data-value="none">لا أعاني</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn prev-btn" data-prev="4">← السابق</button>
+                    <button type="button" class="nav-btn next-btn" data-next="6">التالي →</button>
+                </div>
+            </div>
+
+            <!-- سؤال 6 -->
+            <div id="q6" class="question-screen">
+                <div class="question-card">
+                    <h3>⚡ كيف تصف مستوى طاقتك اليومية؟</h3>
+                    <div class="options-grid" data-question="energy">
+                        <div class="option-btn" data-value="very-low">منخفض جداً</div>
+                        <div class="option-btn" data-value="low">منخفض</div>
+                        <div class="option-btn" data-value="medium">متوسط</div>
+                        <div class="option-btn" data-value="high">مرتفع</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn prev-btn" data-prev="5">← السابق</button>
+                    <button type="button" class="nav-btn next-btn" data-next="7">التالي →</button>
+                </div>
+            </div>
+
+            <!-- سؤال 7 -->
+            <div id="q7" class="question-screen">
+                <div class="question-card">
+                    <h3>😴 كيف تصف جودة نومك؟</h3>
+                    <div class="options-grid" data-question="sleep">
+                        <div class="option-btn" data-value="poor">سيئة</div>
+                        <div class="option-btn" data-value="fair">مقبولة</div>
+                        <div class="option-btn" data-value="good">جيدة</div>
+                        <div class="option-btn" data-value="excellent">ممتازة</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn prev-btn" data-prev="6">← السابق</button>
+                    <button type="button" class="nav-btn next-btn" data-next="8">التالي →</button>
+                </div>
+            </div>
+
+            <!-- سؤال 8 -->
+            <div id="q8" class="question-screen">
+                <div class="question-card">
+                    <h3>📝 هل تعاني من أي أعراض إضافية؟</h3>
+                    <div class="options-grid" data-question="symptoms">
+                        <div class="option-btn" data-value="headache">صداع مزمن</div>
+                        <div class="option-btn" data-value="skin">مشاكل جلدية</div>
+                        <div class="option-btn" data-value="anxiety">قلق واكتئاب</div>
+                        <div class="option-btn" data-value="hair">تساقط شعر</div>
+                        <div class="option-btn" data-value="allergy">حساسية</div>
+                        <div class="option-btn" data-value="none">لا أعاني</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn prev-btn" data-prev="7">← السابق</button>
+                    <button type="submit" class="nav-btn">🎯 إنهاء التشخيص</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <div id="resultsContainer" style="display: none;">
+        <h2>🌿 خطتك العلاجية المخصصة</h2>
+        <div id="recommendedFoods"></div>
+        <button id="goToPlanBtn" class="submit-btn" style="margin-top: 20px;">📋 اذهب للخطة الكاملة</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const startScreen = document.getElementById('startScreen');
+        const questionsContainer = document.getElementById('questionsContainer');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const startBtn = document.getElementById('startDiagnosisBtn');
+        const form = document.getElementById('diagnosisForm');
+        const recommendedFoods = document.getElementById('recommendedFoods');
+        
+        let userAnswers = {};
+        let allFoods = [];
+        let currentQuestion = 1;
+        const totalQuestions = 8;
+
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            }
+        });
+
+        async function loadFoods() {
+            try {
+                const snapshot = await db.collection('foods').get();
+                allFoods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log('تم تحميل', allFoods.length, 'صنف طعام');
+            } catch (error) {
+                console.error('خطأ في تحميل الأطعمة:', error);
+            }
+        }
+        loadFoods();
+
+        startBtn.onclick = () => {
+            startScreen.style.display = 'none';
+            questionsContainer.style.display = 'block';
+            showQuestion(1);
+        };
+
+        function showQuestion(num) {
+            for(let i = 1; i <= totalQuestions; i++) {
+                const q = document.getElementById(`q${i}`);
+                if(q) q.style.display = 'none';
+            }
+            const current = document.getElementById(`q${num}`);
+            if(current) current.style.display = 'block';
+            const progress = (num / totalQuestions) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+        }
+
+        document.querySelectorAll('.options-grid').forEach(grid => {
+            grid.querySelectorAll('.option-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const question = grid.dataset.question;
+                    grid.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    userAnswers[question] = btn.dataset.value;
+                };
+            });
+        });
+
+        document.querySelectorAll('.next-btn').forEach(btn => {
+            btn.onclick = () => {
+                const next = parseInt(btn.dataset.next);
+                if(next <= totalQuestions) {
+                    currentQuestion = next;
+                    showQuestion(currentQuestion);
+                }
+            };
+        });
+
+        document.querySelectorAll('.prev-btn').forEach(btn => {
+            btn.onclick = () => {
+                const prev = parseInt(btn.dataset.prev);
+                if(prev >= 1) {
+                    currentQuestion = prev;
+                    showQuestion(currentQuestion);
+                }
+            };
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const user = auth.currentUser;
+            if (!user) {
+                alert('الرجاء تسجيل الدخول أولاً');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // تحديد الحالة
+            let condition = "عامة";
+            const chronic = userAnswers.chronic;
+            if (chronic === 'diabetes') condition = "السكري";
+            else if (chronic === 'pressure') condition = "ضغط الدم";
+            else if (chronic === 'cholesterol') condition = "الكوليسترول";
+            else if (chronic === 'heart') condition = "أمراض القلب";
+            else if (chronic === 'joints') condition = "آلام المفاصل";
+            else if (chronic === 'digestion') condition = "اضطرابات هضمية";
+            else if (chronic === 'kidney') condition = "حصوات الكلى";
+            else if (chronic === 'thyroid') condition = "الغدة الدرقية";
+            else if (chronic === 'anemia') condition = "فقر الدم";
+            else if (chronic === 'gout') condition = "النقرس";
+            else if (chronic === 'psoriasis') condition = "الصدفية";
+            else if (chronic === 'asthma') condition = "الربو";
+            else if (chronic === 'allergy') condition = "حساسية الطعام";
+
+            // تصفية الأطعمة حسب الحالة
+            let filteredFoods = allFoods.filter(food => food.type === 'allowed');
+
+            if (condition === "السكري") {
+                filteredFoods = filteredFoods.filter(food => 
+                    !food.name.includes('تمر') && 
+                    !food.name.includes('مانجو') &&
+                    !food.name.includes('عنب') &&
+                    !food.name.includes('بطيخ')
+                );
+            } else if (condition === "ضغط الدم") {
+                filteredFoods = filteredFoods.filter(food => 
+                    !food.desc.includes('ملح')
+                );
+            } else if (condition === "آلام المفاصل") {
+                filteredFoods = filteredFoods.filter(food => 
+                    food.category === 'مأكولات بحرية' || 
+                    food.name.includes('زيت الزيتون')
+                );
+            } else if (condition === "فقر الدم") {
+                filteredFoods = filteredFoods.filter(food => 
+                    food.name.includes('التمر') || 
+                    food.name.includes('السبانخ') ||
+                    food.name.includes('الجرجير') ||
+                    food.category === 'لحوم حمراء'
+                );
+            } else if (condition === "حساسية الطعام") {
+                filteredFoods = filteredFoods.filter(food => 
+                    !food.desc.includes('حساسية') &&
+                    !food.name.includes('بيض') &&
+                    !food.name.includes('لبن')
+                );
+            } else if (condition === "النقرس") {
+                filteredFoods = filteredFoods.filter(food => 
+                    food.category !== 'لحوم حمراء' &&
+                    !food.name.includes('لحم')
+                );
+            }
+
+            // عرض النتائج
+            questionsContainer.style.display = 'none';
+            resultsContainer.style.display = 'block';
+
+            recommendedFoods.innerHTML = `
+                <div style="background: rgba(255,215,0,0.1); padding: 20px; border-radius: 20px; text-align: center;">
+                    <h3>🩺 حالتك: ${condition}</h3>
+                    <p style="color: #a8e6cf;">الأطعمة المسموحة لك في نظام الطيبات:</p>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+                    ${filteredFoods.slice(0, 40).map(food => `
+                        <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 15px; text-align: center;">
+                            <span style="display: block; font-weight: bold;">${food.name}</span>
+                            <span style="font-size: 0.8rem; color: #c5b89a;">${food.category || ''}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <p style="margin-top: 20px; font-size: 0.9rem; color: #a8e6cf; text-align: center;">
+                    🍽️ هذه هي الأطعمة الطيبة المناسبة لحالتك
+                </p>
+            `;
+
+            // حفظ الحالة في الملف الشخصي (userConditions)
+            try {
+                const docRef = await db.collection('userConditions').add({
+                    userId: user.uid,
+                    condition: condition,
+                    notes: `تم التشخيص في ${new Date().toLocaleDateString('ar-EG')} - السكر: ${userAnswers.sugar || 'غير محدد'} - الملح: ${userAnswers.salt || 'غير محدد'}`,
+                    status: 'active',
+                    createdAt: new Date(),
+                    fromDiagnosis: true,
+                    answers: userAnswers,
+                    recommendedFoods: filteredFoods.map(f => f.name)
+                });
+
+                // تعيينها كحالة حالية
+                localStorage.setItem('currentConditionId', docRef.id);
+                localStorage.setItem('userCondition', condition);
+
+                // حفظ التشخيص في diagnoses (للخلفية)
+                await db.collection('diagnoses').doc(user.uid).set({
+                    userId: user.uid,
+                    condition: condition,
+                    answers: userAnswers,
+                    diagnosedAt: new Date(),
+                    recommendedFoods: filteredFoods.map(f => f.name),
+                    conditionId: docRef.id
+                });
+
+            } catch (error) {
+                console.error('خطأ في حفظ الحالة:', error);
+            }
+
+            // الانتقال للخطة بعد 2 ثانية
+            setTimeout(() => {
+                window.location.href = 'plan.html';
+            }, 1500);
+        });
+
+        document.getElementById('goToPlanBtn').onclick = () => {
+            window.location.href = 'plan.html';
+        };
+    });
+</script>
+
+</body>
+</html>

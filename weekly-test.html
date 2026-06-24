@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الاختبار الأسبوعي | نظام الطيبات</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<div class="weekly-container">
+    <div class="weekly-header">
+        <h1>📝 اختبار تقدمك الأسبوعي</h1>
+        <p>سجل تطورك أسبوعياً وشاهد تحسن حالتك</p>
+        <div id="weekBadge" class="week-badge">الأسبوع 1</div>
+    </div>
+
+    <form id="weeklyForm">
+        <!-- سؤال 1 -->
+        <div class="test-question">
+            <label>1. 🦵 كيف تشعر بألم المفاصل هذا الأسبوع؟</label>
+            <div class="rating-scale" data-question="joints">
+                <button type="button" class="rating-btn" data-value="muchBetter">تحسن كبير</button>
+                <button type="button" class="rating-btn" data-value="better">تحسن ملحوظ</button>
+                <button type="button" class="rating-btn" data-value="slightlyBetter">تحسن بسيط</button>
+                <button type="button" class="rating-btn" data-value="same">نفس المستوى</button>
+                <button type="button" class="rating-btn" data-value="worse">ازداد سوءاً</button>
+            </div>
+        </div>
+
+        <!-- سؤال 2 -->
+        <div class="test-question">
+            <label>2. 🍽️ كيف تشعر بعملية الهضم والانتفاخات؟</label>
+            <div class="rating-scale" data-question="digestion">
+                <button type="button" class="rating-btn" data-value="muchBetter">تحسن كبير</button>
+                <button type="button" class="rating-btn" data-value="better">تحسن ملحوظ</button>
+                <button type="button" class="rating-btn" data-value="same">نفس المستوى</button>
+                <button type="button" class="rating-btn" data-value="worse">ازداد سوءاً</button>
+            </div>
+        </div>
+
+        <!-- سؤال 3 -->
+        <div class="test-question">
+            <label>3. ⚡ كيف كان مستوى طاقتك ونشاطك؟</label>
+            <div class="rating-scale" data-question="energy">
+                <button type="button" class="rating-btn" data-value="high">مرتفع جداً</button>
+                <button type="button" class="rating-btn" data-value="mediumHigh">مرتفع نسبياً</button>
+                <button type="button" class="rating-btn" data-value="medium">متوسط</button>
+                <button type="button" class="rating-btn" data-value="low">منخفض</button>
+                <button type="button" class="rating-btn" data-value="veryLow">منخفض جداً</button>
+            </div>
+        </div>
+
+        <!-- سؤال 4 -->
+        <div class="test-question">
+            <label>4. 😴 كيف كانت جودة نومك هذا الأسبوع؟</label>
+            <div class="rating-scale" data-question="sleep">
+                <button type="button" class="rating-btn" data-value="excellent">ممتازة</button>
+                <button type="button" class="rating-btn" data-value="good">جيدة</button>
+                <button type="button" class="rating-btn" data-value="fair">مقبولة</button>
+                <button type="button" class="rating-btn" data-value="poor">سيئة</button>
+            </div>
+        </div>
+
+        <!-- سؤال 5 -->
+        <div class="test-question">
+            <label>5. 🏃 هل التزمت بالتمارين الموصى بها؟</label>
+            <div class="rating-scale" data-question="exercise">
+                <button type="button" class="rating-btn" data-value="daily">يومياً</button>
+                <button type="button" class="rating-btn" data-value="4-5">4-5 أيام</button>
+                <button type="button" class="rating-btn" data-value="2-3">2-3 أيام</button>
+                <button type="button" class="rating-btn" data-value="rarely">نادراً</button>
+                <button type="button" class="rating-btn" data-value="never">لم أمارس</button>
+            </div>
+        </div>
+
+        <!-- سؤال 6 -->
+        <div class="test-question">
+            <label>6. 🍽️ هل التزمت بنظام الطيبات الغذائي؟</label>
+            <div class="rating-scale" data-question="diet">
+                <button type="button" class="rating-btn" data-value="100%">التزام كامل (100%)</button>
+                <button type="button" class="rating-btn" data-value="75%">معظم الوقت (75%)</button>
+                <button type="button" class="rating-btn" data-value="50%">نصف الوقت (50%)</button>
+                <button type="button" class="rating-btn" data-value="25%">قليلاً (25%)</button>
+                <button type="button" class="rating-btn" data-value="0%">لم ألتزم</button>
+            </div>
+        </div>
+
+        <!-- سؤال 7 -->
+        <div class="test-question">
+            <label>7. 📝 أي أعراض تحسنت أو ظهرت؟ (اكتب ملاحظاتك)</label>
+            <textarea name="notes" rows="4" placeholder="مثال: اختفى الصداع، تحسنت نفسيتي، أنام أفضل..."></textarea>
+        </div>
+
+        <button type="submit" class="submit-weekly">💾 حفظ نتائج الأسبوع</button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let currentWeekAnswers = {};
+        let currentWeekNumber = 1;
+
+        async function loadWeekNumber() {
+            try {
+                const user = auth.currentUser;
+                if (!user) return;
+                const testsQuery = await db.collection('weekly_tests')
+                    .where('userId', '==', user.uid)
+                    .get();
+                currentWeekNumber = testsQuery.size + 1;
+                document.getElementById('weekBadge').innerHTML = `الأسبوع ${currentWeekNumber}`;
+            } catch (error) {
+                console.error('خطأ في جلب رقم الأسبوع:', error);
+            }
+        }
+        loadWeekNumber();
+
+        document.querySelectorAll('.rating-scale').forEach(scale => {
+            const question = scale.dataset.question;
+            scale.querySelectorAll('.rating-btn').forEach(btn => {
+                btn.onclick = () => {
+                    scale.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    currentWeekAnswers[question] = btn.dataset.value;
+                };
+            });
+        });
+
+        const form = document.getElementById('weeklyForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const user = auth.currentUser;
+            if (!user) {
+                alert('الرجاء تسجيل الدخول');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const notes = document.querySelector('textarea[name="notes"]').value;
+            
+            const requiredQuestions = ['joints', 'digestion', 'energy', 'sleep', 'exercise', 'diet'];
+            for (let q of requiredQuestions) {
+                if (!currentWeekAnswers[q]) {
+                    alert(`الرجاء الإجابة على جميع الأسئلة`);
+                    return;
+                }
+            }
+
+            // جلب الحالة الحالية
+            const conditionId = localStorage.getItem('currentConditionId') || null;
+
+            const testData = {
+                userId: user.uid,
+                conditionId: conditionId,
+                weekNumber: currentWeekNumber,
+                answers: currentWeekAnswers,
+                notes: notes,
+                submittedAt: new Date()
+            };
+
+            try {
+                await db.collection('weekly_tests').add(testData);
+                alert(`✅ تم حفظ اختبار الأسبوع ${currentWeekNumber} بنجاح!`);
+                form.reset();
+                document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+                currentWeekAnswers = {};
+                currentWeekNumber++;
+                document.getElementById('weekBadge').innerHTML = `الأسبوع ${currentWeekNumber}`;
+            } catch (error) {
+                alert('خطأ: ' + error.message);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
